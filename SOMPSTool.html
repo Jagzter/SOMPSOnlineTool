@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Social Panorama</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #f5f5f5;
+            -webkit-text-size-adjust: 100%;
+            font-size: 1rem;
+        }
+        #clockContainer {
+            position: relative;
+            margin: 20px;
+            width: 100%;
+            max-width: 500px;
+            overflow: hidden;
+        }
+        #clockCanvas {
+            border: 1px solid #333;
+            border-radius: 50%;
+            background-color: #f9f9f9;
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 500px;
+            max-height: 500px;
+        }
+        #clickLog {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+            max-width: 500px;
+            background-color: white;
+            font-size: 0.875rem;
+        }
+        button {
+            margin: 10px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        button:hover { background-color: #45a049; }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #resetBtn { background-color: #f44336; }
+        #resetBtn:hover { background-color: #d32f2f; }
+        .form-group { margin-bottom: 15px; }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.875rem;
+        }
+        input[type="number"], input[type="text"], input[type="date"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+        /* Visual feedback */
+        input[type="text"] { text-transform: uppercase; }
+        input:disabled { background-color: #f0f0f0; }
+        .radio-group { margin-top: 10px; }
+        .radio-group label {
+            display: inline;
+            font-weight: normal;
+            margin-left: 5px;
+            font-size: 0.875rem;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+            white-space: nowrap;
+            font-size: 0.875rem;
+        }
+        .required-field { border: 1px solid red !important; }
+        .canvas-input {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 180px;
+            margin-bottom: 20px;
+        }
+        .canvas-input-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+        .canvas-input-group { margin-bottom: 12px; }
+        .canvas-input-group label { font-size: 0.75rem; margin-bottom: 3px; }
+        .canvas-input-group input { padding: 5px; font-size: 0.75rem; width: 100%; }
+        .radio-group-small {
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            flex-wrap: nowrap;
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+        .radio-group-small div {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 20px;
+        }
+        .radio-group-small label {
+            display: inline;
+            margin: 0;
+            padding: 0;
+            font-weight: normal;
+            white-space: nowrap;
+        }
+        .radio-group-small input[type="radio"] { margin: 0; vertical-align: middle; }
+        h1 { color: #333; margin-bottom: 20px; font-size: 1.5rem; }
+        .input-containers {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            max-width: 350px;
+        }
+        .info-fields {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        }
+        .info-fields .form-group { margin-bottom: 0; }
+        .info-fields label { font-size: 0.75rem; }
+        .info-fields input { font-size: 0.875rem; }
+        .button-container { display: flex; justify-content: center; width: 100%; }
+        .logo-container { text-align: center; margin-bottom: 10px; width: 100%; max-width: 800px; }
+        .logo-container img { max-width: 100%; height: auto; }
+        /* Updated for label positioning below dots */
+        .marker-label {
+            position: absolute;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 14px;
+            text-align: center;
+            width: 60px;
+            margin-left: -30px; /* Half of width to center */
+        }
+    </style>
+</head>
+<body>
+    <!-- Embedded logo (Base64) -->
+    <div class="logo-container">
+        <img src="data:image/png;base64,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" alt="Society for Mental Space Psychology Logo">
+    </div>
+
+    <!-- Information fields -->
+    <div class="info-fields">
+        <div class="form-group">
+            <label for="therapistNumber">Therapist Number</label>
+            <input type="number" id="therapistNumber">
+        </div>
+        <div class="form-group">
+            <label for="participantNumber">Participant Code</label>
+            <input type="text" id="participantNumber">
+        </div>
+        <div class="form-group">
+            <label for="issueName">Issue Feeling Name</label>
+            <input type="text" id="issueName">
+        </div>
+        <div class="form-group">
+            <label for="modality">Therapy Modus</label>
+            <input type="text" id="modality">
+        </div>
+        <div class="form-group">
+            <label for="hours">Hours Used</label>
+            <input type="number" id="hours" min="0" step="0.5">
+        </div>
+        <div class="form-group">
+            <label for="sessionDate">Date </label>
+            <input type="text" id="sessionDate" placeholder="e.g. 20 Jun 2023">
+        </div>
+    </div>
+
+    <h1></h1>
+    
+    <div class="input-containers">
+        <!-- START Container -->
+        <div class="canvas-input">
+            <div class="canvas-input-title">BEFORE</div>
+            <div class="canvas-input-group">
+                <label for="startSudsInput">SUDS (1-10):</label>
+                <input type="number" id="startSudsInput" min="1" max="10" required>
+            </div>
+            <div class="canvas-input-group">
+                <label for="startDistance">Distance (m):</label>
+                <input type="number" id="startDistance" min="0" step="1" disabled>
+            </div>
+            <div class="canvas-input-group">
+                <label for="startEyeLevel">Eye Level (cm):</label>
+                <input type="number" id="startEyeLevel" disabled>
+            </div>
+            <div class="canvas-input-group radio-group-small">
+                <div>
+                    <input type="radio" id="startAbove" name="startPosition" value="above" checked disabled>
+                    <label for="startAbove">Above</label>
+                </div>
+                <div>
+                    <input type="radio" id="startBelow" name="startPosition" value="below" disabled>
+                    <label for="startBelow">Below</label>
+                </div>
+                <div>
+                    <input type="radio" id="startEyeLevelRadio" name="startPosition" value="eye-level" disabled>
+                    <label for="startEyeLevelRadio">Eye Level</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- END Container -->
+        <div class="canvas-input">
+            <div class="canvas-input-title">AFTER</div>
+            <div class="canvas-input-group">
+                <label for="endSudsInput">SUDS (1-10):</label>
+                <input type="number" id="endSudsInput" min="1" max="10" required disabled>
+            </div>
+            <div class="canvas-input-group">
+                <label for="endDistance">Distance (m):</label>
+                <input type="number" id="endDistance" min="0" step="0.01" disabled>
+            </div>
+            <div class="canvas-input-group">
+                <label for="endEyeLevel">Eye Level (cm):</label>
+                <input type="number" id="endEyeLevel" disabled>
+            </div>
+            <div class="canvas-input-group radio-group-small">
+                <div>
+                    <input type="radio" id="endAbove" name="endPosition" value="above" checked disabled>
+                    <label for="endAbove">Above</label>
+                </div>
+                <div>
+                    <input type="radio" id="endBelow" name="endPosition" value="below" disabled>
+                    <label for="endBelow">Below</label>
+                </div>
+                <div>
+                    <input type="radio" id="endEyeLevelRadio" name="endPosition" value="eye-level" disabled>
+                    <label for="endEyeLevelRadio">Eye Level</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="clockContainer">
+        <canvas id="clockCanvas" width="500" height="500"></canvas>
+    </div>
+    
+    <div class="button-container">
+        <button id="downloadBtn" disabled>Download</button>
+        <button id="resetBtn">Reset</button>
+    </div>
+    <div id="clickLog"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('clockCanvas');
+            const ctx = canvas.getContext('2d');
+            const clickLog = document.getElementById('clickLog');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const clockContainer = document.getElementById('clockContainer');
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) * 0.8;
+            
+            const colorPalette = ['#FF5733', '#33FF57'];
+            const labelNames = ['Before', 'After'];
+            
+            let clicks = [];
+            let startSudsValue = null;
+            let endSudsValue = null;
+
+            // ---- helpers for filename prefix ----
+            function safeSlug(v, fallback = 'NA') {
+              v = (v ?? '').toString().trim();
+              if (!v) return fallback;
+              v = v.replace(/\s+/g, '-').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+              return v || fallback;
+            }
+            function yyyymmddhhss(d = new Date()) {
+              const pad = n => String(n).padStart(2, '0');
+              const YYYY = d.getFullYear();
+              const MM   = pad(d.getMonth() + 1);
+              const DD   = pad(d.getDate());
+              const HH   = pad(d.getHours());
+              const SS   = pad(d.getSeconds());
+              return `${YYYY}${MM}${DD}${HH}${SS}`;
+            }
+            function makePrefix() {
+              const t = safeSlug(document.getElementById('therapistNumber').value);
+              const p = safeSlug(document.getElementById('participantNumber').value);
+              const stamp = yyyymmddhhss();
+              return `${t}-${p}-${stamp}`;
+            }
+
+            // Get references to all input fields
+            const startSudsInput = document.getElementById('startSudsInput');
+            const startDistanceInput = document.getElementById('startDistance');
+            const startEyeLevelInput = document.getElementById('startEyeLevel');
+            const startAboveInput = document.getElementById('startAbove');
+            const startBelowInput = document.getElementById('startBelow');
+            const startEyeLevelRadio = document.getElementById('startEyeLevelRadio');
+            
+            const endSudsInput = document.getElementById('endSudsInput');
+            const endDistanceInput = document.getElementById('endDistance');
+            const endEyeLevelInput = document.getElementById('endEyeLevel');
+            const endAboveInput = document.getElementById('endAbove');
+            const endBelowInput = document.getElementById('endBelow');
+            const endEyeLevelRadio = document.getElementById('endEyeLevelRadio');
+			
+			// Add event listeners for eye level radios
+			[startAboveInput, startBelowInput, startEyeLevelRadio].forEach(radio => {
+				radio.addEventListener('change', () => handleEyeLevelRadio(radio, startEyeLevelInput));
+			});
+
+			[endAboveInput, endBelowInput, endEyeLevelRadio].forEach(radio => {
+				radio.addEventListener('change', () => handleEyeLevelRadio(radio, endEyeLevelInput));
+			});
+
+			// Initialize eye level inputs
+			handleEyeLevelRadio(startEyeLevelRadio, startEyeLevelInput);
+			handleEyeLevelRadio(endEyeLevelRadio, endEyeLevelInput);
+
+            // Create label elements and append them to clock container
+            const labelElements = {
+                start: document.createElement('div'),
+                end: document.createElement('div')
+            };
+            
+            // Initialize label elements
+            Object.values(labelElements).forEach(el => {
+                el.className = 'marker-label';
+                el.style.display = 'none';
+                clockContainer.appendChild(el);
+            });
+			// Force uppercase on keypress for specific fields
+			['participantNumber', 'issueName', 'modality'].forEach(id => {
+				const field = document.getElementById(id);
+				field.addEventListener('input', function(e) {
+					this.value = this.value.toUpperCase();
+				});
+			});
+			
+			// Allow only alphabetic characters (no numbers or special chars)
+			['participantNumber', 'modality'].forEach(id => {
+				const field = document.getElementById(id);
+				field.addEventListener('input', function(e) {
+					this.value = this.value.replace(/[^A-Za-z]/g, '').toUpperCase();
+                });
+            });
+
+            function resetData() {
+                clicks = [];
+                startSudsInput.value = '';
+                startDistanceInput.value = '';
+                startEyeLevelInput.value = '';
+                startAboveInput.checked = true;
+                startSudsValue = null;
+                
+                endSudsInput.value = '';
+                endDistanceInput.value = '';
+                endEyeLevelInput.value = '';
+                endAboveInput.checked = true;
+                endSudsValue = null;
+                
+                clickLog.innerHTML = '';
+                drawClock();
+                updateFieldStates();
+            }
+
+            resetBtn.addEventListener('click', resetData);
+
+            function updateFieldStates() {
+                const startFieldsComplete = startSudsValue !== null;
+    
+                startDistanceInput.disabled = !(startFieldsComplete && clicks.length > 0);
+                startEyeLevelInput.disabled = !(startFieldsComplete && clicks.length > 0);
+                startAboveInput.disabled = !(startFieldsComplete && clicks.length > 0);
+                startBelowInput.disabled = !(startFieldsComplete && clicks.length > 0);
+                startEyeLevelRadio.disabled = !(startFieldsComplete && clicks.length > 0);
+    
+                // Allow second click BEFORE endSUDS is set.
+                const endSectionEnabled = startFieldsComplete && clicks.length >= 1;
+                endSudsInput.disabled = !endSectionEnabled;
+                endDistanceInput.disabled = !(endSectionEnabled && clicks.length >= 2);
+                endEyeLevelInput.disabled = !(endSectionEnabled && clicks.length >= 2);
+                endAboveInput.disabled = !(endSectionEnabled && clicks.length >= 2);
+                endBelowInput.disabled = !(endSectionEnabled && clicks.length >= 2);
+                endEyeLevelRadio.disabled = !(endSectionEnabled && clicks.length >= 2);
+    
+                downloadBtn.disabled = !(startFieldsComplete && endSudsValue !== null && clicks.length >= 2);
+            }
+
+            function handleEyeLevelRadio(radio, eyeLevelInput) {
+                if (radio.checked && radio.value === 'eye-level') {
+                    eyeLevelInput.value = '0';
+                    eyeLevelInput.disabled = true;
+                } else {
+                    eyeLevelInput.disabled = false;
+                }
+            }
+			
+            startSudsInput.addEventListener('change', function() {
+                const value = parseInt(this.value);
+                if (value >= 1 && value <= 10) {
+                    startSudsValue = value;
+                    this.classList.remove('required-field');
+                    updateFieldStates();
+                    updateLog();
+                } else {
+                    this.classList.add('required-field');
+                    startSudsValue = null;
+                    updateFieldStates();
+                }
+            });
+
+            endSudsInput.addEventListener('change', function() {
+                const value = parseInt(this.value);
+                if (value >= 1 && value <= 10) {
+                    endSudsValue = value;
+                    this.classList.remove('required-field');
+                    updateLog();
+                    updateFieldStates();
+                } else {
+                    this.classList.add('required-field');
+                    endSudsValue = null;
+                }
+            });
+
+            function drawClock() {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw clock face
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Draw hour markers and numbers
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#333';
+                
+                for (let i = 1; i <= 12; i++) {
+                    const angle = (i - 3) * Math.PI / 6;
+                    const markerX = centerX + Math.cos(angle) * (radius * 0.8);
+                    const markerY = centerY + Math.sin(angle) * (radius * 0.8);
+                    
+                    ctx.beginPath();
+                    ctx.arc(markerX, markerY, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    const textX = centerX + Math.cos(angle) * (radius * 0.9);
+                    const textY = centerY + Math.sin(angle) * (radius * 0.9);
+                    ctx.fillText(i.toString(), textX, textY);
+                }
+                
+                drawCenterMarker();
+                
+                // Hide all labels initially
+                labelElements.start.style.display = 'none';
+                labelElements.end.style.display = 'none';
+
+                // Draw markers and position labels
+                for (let i = 0; i < Math.min(clicks.length, 2); i++) {
+                    const click = clicks[i];
+                    
+                    // Draw marker
+                    ctx.beginPath();
+                    ctx.arc(click.x, click.y, 10, 0, 2 * Math.PI);
+                    ctx.fillStyle = colorPalette[i];
+                    ctx.fill();
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Position label below the dot
+                    const label = labelElements[i === 0 ? 'start' : 'end'];
+                    label.textContent = click.label;
+                    label.style.color = colorPalette[i];
+                    
+                    const containerRect = clockContainer.getBoundingClientRect();
+                    const canvasRect = canvas.getBoundingClientRect();
+                    const offsetX = canvasRect.left - containerRect.left;
+                    const offsetY = canvasRect.top - containerRect.top;
+                    
+                    label.style.left = `${offsetX + click.x}px`;
+                    label.style.top = `${offsetY + click.y + 20}px`;
+                    label.style.display = 'block';
+                }
+            }
+            
+            function drawCenterMarker() {
+                const ctx = canvas.getContext('2d');
+                const circleRadius = 30;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, circleRadius, 0, 2 * Math.PI);
+                ctx.fillStyle = 'magenta';
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                const triangleHeight = 20;
+                const triangleWidth = 15;
+                
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY - circleRadius - triangleHeight);
+                ctx.lineTo(centerX - triangleWidth, centerY - circleRadius);
+                ctx.lineTo(centerX + triangleWidth, centerY - circleRadius);
+                ctx.closePath();
+                ctx.fillStyle = 'magenta';
+                ctx.fill();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+            
+            function getHourSegment(x, y) {
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const angle = Math.atan2(dy, dx);
+                
+                let hour = ((angle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 6);
+                hour = Math.floor(hour) + 3;
+                hour = hour % 12;
+                hour = hour === 0 ? 12 : hour;
+                
+                return hour;
+            }
+            
+            canvas.addEventListener('click', function(e) {
+                // Only require startSUDS for first click; allow second click before endSUDS
+                if (!startSudsValue) return;
+                if (clicks.length >= 2) return;
+                
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const distance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+                if (distance > radius || distance < 50) return;
+                
+                for (let i = 0; i < clicks.length; i++) {
+                    const click = clicks[i];
+                    const markerDistance = Math.sqrt(Math.pow(x - click.x, 2) + Math.pow(y - click.y, 2));
+                    if (markerDistance <= 10) return;
+                }
+                
+                const hour = getHourSegment(x, y);
+                const now = new Date();
+                const timestamp = now.toLocaleTimeString();
+                
+                const click = {
+                    x: x,
+                    y: y,
+                    hour: hour,
+                    timestamp: timestamp,
+                    label: labelNames[clicks.length],
+                    color: colorPalette[clicks.length],
+                    suds: clicks.length === 0 ? startSudsValue : endSudsValue,
+                    distance: null,
+                    eyeLevel: null,
+                    position: 'above'
+                };
+                
+                clicks.push(click);
+                
+                if (clicks.length === 1) {
+                    click.distance = parseFloat(startDistanceInput.value) || 1.0;
+                    click.eyeLevel = parseFloat(startEyeLevelInput.value) || 170;
+                    click.position = startAboveInput.checked ? 'above' : 
+                                   startBelowInput.checked ? 'below' : 'eye-level';
+                } else if (clicks.length === 2) {
+                    click.distance = parseFloat(endDistanceInput.value) || 1.0;
+                    click.eyeLevel = parseFloat(endEyeLevelInput.value) || 170;
+                    click.position = endAboveInput.checked ? 'above' : 
+                                   endBelowInput.checked ? 'below' : 'eye-level';
+                    click.suds = endSudsValue;
+                }
+                
+                drawClock();
+                updateLog();
+                updateFieldStates();
+            });
+            
+            function updateLog() {
+                clickLog.innerHTML = '';
+                
+                for (let i = 0; i < clicks.length; i++) {
+                    const click = clicks[i];
+                    const logEntry = document.createElement('div');
+                    logEntry.className = 'log-entry';
+                    logEntry.style.color = click.color;
+                    
+                    const position = i === 0 ? 
+                        (startAboveInput.checked ? 'Above' : 
+                         startBelowInput.checked ? 'Below' : 'Eye Level') : 
+                        (endAboveInput.checked ? 'Above' : 
+                         endBelowInput.checked ? 'Below' : 'Eye Level');
+                    
+                    const distance = i === 0 ? 
+                        (startDistanceInput.value || '1.0') : 
+                        (endDistanceInput.value || '1.0');
+                    
+                    const eyeLevel = i === 0 ? 
+                        (startEyeLevelInput.value || '170') : 
+                        (endEyeLevelInput.value || '170');
+                    
+                    const suds = i === 0 ? startSudsValue : endSudsValue;
+                    
+                    const prefix = i === 0 ? 'BEFORE ' : 'AFTER ';
+                    const bL = '('
+                    const bR = ')'
+                    logEntry.textContent = `${prefix} ${bL}${click.label}${bR}: SUDS=${suds || '?'},   Distance=${distance}m,    Eye Level Position=${eyeLevel}cm ${position}`;
+                    clickLog.appendChild(logEntry);
+                }
+                
+                clickLog.scrollTop = clickLog.scrollHeight;
+            }
+
+            function createDataLine() {
+                const therapist = document.getElementById('therapistNumber').value || 'NA';
+                const participant = document.getElementById('participantNumber').value || 'NA';
+                const issue = document.getElementById('issueName').value || 'NA';
+                const modality = document.getElementById('modality').value || 'NA';
+                const hours = document.getElementById('hours').value || '0';
+                const date = document.getElementById('sessionDate').value || 'NA';
+                
+                const startPosition = startAboveInput.checked ? 'above' : 
+                                   startBelowInput.checked ? 'below' : 'eye-level';
+                const endPosition = endAboveInput.checked ? 'above' : 
+                                  endBelowInput.checked ? 'below' : 'eye-level';
+                
+                const startHour = clicks[0]?.hour || 'NA';
+                const endHour = clicks[1]?.hour || 'NA';
+
+                const header = "therapist;participant;issue;modality;hours;date;startSUDS;startDistance;startEyeLevel;startPosition;startHour;endSUDS;endDistance;endEyeLevel;endPosition;endHour";
+                const data = [
+                    therapist,
+                    participant,
+                    issue,
+                    modality,
+                    hours,
+                    date,
+                    startSudsValue || 'NA',
+                    startDistanceInput.value || 'NA',
+                    startEyeLevelInput.value || 'NA',
+                    startPosition,
+                    startHour,
+                    endSudsValue || 'NA',
+                    endDistanceInput.value || 'NA',
+                    endEyeLevelInput.value || 'NA',
+                    endPosition,
+                    endHour
+                ].join(';');
+                
+                return header + '\n' + data;
+            }
+
+            [startDistanceInput, startEyeLevelInput, startAboveInput, startBelowInput, startEyeLevelRadio,
+             endDistanceInput, endEyeLevelInput, endAboveInput, endBelowInput, endEyeLevelRadio].forEach(input => {
+                input.addEventListener('change', () => {
+                    updateLog();
+                    updateFieldStates();
+                    
+                    if (clicks.length > 0) {
+                        clicks[0].distance = parseFloat(startDistanceInput.value) || 1.0;
+                        clicks[0].eyeLevel = parseFloat(startEyeLevelInput.value) || 170;
+                        clicks[0].position = startAboveInput.checked ? 'above' : 
+                                           startBelowInput.checked ? 'below' : 'eye-level';
+                    }
+                    if (clicks.length > 1) {
+                        clicks[1].distance = parseFloat(endDistanceInput.value) || 1.0;
+                        clicks[1].eyeLevel = parseFloat(endEyeLevelInput.value) || 170;
+                        clicks[1].position = endAboveInput.checked ? 'above' : 
+                                            endBelowInput.checked ? 'below' : 'eye-level';
+                        clicks[1].suds = endSudsValue;
+                    }
+                    
+                    drawClock();
+                });
+            });
+            
+            downloadBtn.addEventListener('click', function() {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = canvas.width;
+                tempCanvas.height = canvas.height + 250;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.drawImage(canvas, 0, 0);
+                
+                tempCtx.font = 'bold 12px Arial';
+                tempCtx.fillStyle = '#000';
+                tempCtx.textAlign = 'left';
+                
+                let yPos = canvas.height + 40;
+                tempCtx.fillText('Session Information', 20, yPos);
+                yPos += 30;
+                
+                tempCtx.fillText('Therapist', 20, yPos);
+                tempCtx.fillText('Participant', 105, yPos);
+                tempCtx.fillText('Modality', 190, yPos);
+                tempCtx.fillText('Issue', 275, yPos);
+                tempCtx.fillText('Hours', 355, yPos);
+                tempCtx.fillText('Date', 420, yPos);
+                yPos += 20;
+                
+                tempCtx.font = '12px Arial';
+                tempCtx.fillText(document.getElementById('therapistNumber').value || 'N/A', 20, yPos);
+                tempCtx.fillText(document.getElementById('participantNumber').value || 'N/A', 105, yPos);
+                tempCtx.fillText(document.getElementById('modality').value || 'N/A', 190, yPos);
+                tempCtx.fillText(document.getElementById('issueName').value || 'N/A', 275, yPos);
+                tempCtx.fillText(document.getElementById('hours').value || '0', 355, yPos);
+                tempCtx.fillText(document.getElementById('sessionDate').value || 'N/A', 420, yPos);
+                yPos += 40;
+                
+                tempCtx.font = 'bold 12px Arial';
+                tempCtx.fillText('Measurements', 20, yPos);
+                yPos += 30;
+                
+                tempCtx.fillText('', 20, yPos);
+                tempCtx.fillText('SUDS', 120, yPos);
+                tempCtx.fillText('Distance(m)', 180, yPos);
+                tempCtx.fillText('Eye Level(cm)', 280, yPos);
+                tempCtx.fillText('Position', 390, yPos);
+                yPos += 20;
+                
+                const startPosition = startAboveInput.checked ? 'Above' : 
+                                    startBelowInput.checked ? 'Below' : 'Eye Level';
+                const endPosition = endAboveInput.checked ? 'Above' : 
+                                  endBelowInput.checked ? 'Below' : 'Eye Level';
+                
+                tempCtx.fillText('BEFORE (A)', 20, yPos);
+                tempCtx.fillText(startSudsValue || 'N/A', 120, yPos);
+                tempCtx.fillText(startDistanceInput.value || 'N/A', 180, yPos);
+                tempCtx.fillText(startEyeLevelInput.value || 'N/A', 280, yPos);
+                tempCtx.fillText(startPosition, 390, yPos);
+                yPos += 20;
+                
+                tempCtx.fillText('AFTER (B)', 20, yPos);
+                tempCtx.fillText(endSudsValue || 'N/A', 120, yPos);
+                tempCtx.fillText(endDistanceInput.value || 'N/A', 180, yPos);
+                tempCtx.fillText(endEyeLevelInput.value || 'N/A', 280, yPos);
+                tempCtx.fillText(endPosition, 390, yPos);
+                
+                // Filename prefix
+                const prefix = makePrefix();
+                
+                // Image download
+                const link = document.createElement('a');
+                link.download = `${prefix}-clock.png`;
+                link.href = tempCanvas.toDataURL('image/png');
+                link.click();
+                
+                // Data file
+                const dataLine = createDataLine();
+                const dataBlob = new Blob([dataLine], {type: 'text/plain'});
+                const dataUrl = URL.createObjectURL(dataBlob);
+                
+                const dataLink = document.createElement('a');
+                dataLink.download = `${prefix}-data.txt`;
+                dataLink.href = dataUrl;
+                document.body.appendChild(dataLink);
+                dataLink.click();
+                document.body.removeChild(dataLink);
+                URL.revokeObjectURL(dataUrl);
+            });
+            
+            // Set today's date
+            const today = new Date();
+            const day = today.getDate().toString().padStart(2, '0');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const month = monthNames[today.getMonth()];
+            const year = today.getFullYear();
+            document.getElementById('sessionDate').value = `${day} ${month} ${year}`;
+            
+            // Initial setup
+            updateFieldStates();
+            drawClock();
+        });
+    </script>
+</body>
+</html>

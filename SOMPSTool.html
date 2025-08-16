@@ -37,6 +37,109 @@
   .logo-container { text-align: center; margin-bottom: 10px; width: 100%; max-width: 800px; }
   .logo-container img { max-width: 100%; height: auto; }
   .marker-label { position: absolute; font-weight: bold; pointer-events: none; z-index: 10; background-color: rgba(255,255,255,0.85); padding: 2px 6px; border-radius: 4px; font-size: 14px; text-align: center; white-space: nowrap; transform: translateX(-50%); }
+
+/* Eye Level row (matches your mockup) */
+.eye-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.eye-row .eye-left {
+  flex: 1;
+}
+.eye-row .eye-left input[type="number"] {
+  width: 100%;
+}
+.eye-row .eye-right {
+  width: 44px;                 /* small white column for the radios */
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.eye-row .radio-stack {
+  display: flex;
+  flex-direction: column;      /* stack the two radios vertically */
+  gap: 10px;
+}
+.eye-row input[type="radio"] {
+  transform: scale(1.05);      /* slightly larger dots (optional) */
+}
+
+/* for accessibility when we hide visible text labels */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  white-space: nowrap; border: 0;
+}
+
+/* Eye-level radio labels */
+.eye-row .eye-right { width: 56px; padding: 6px 4px; }   /* a tad wider for text */
+.eye-row .radio-stack { display:flex; flex-direction:column; gap:8px; }
+.eye-row .radio-stack label {            /* make each row (dot + text) clickable */
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  margin:0; font-size:0.85rem; font-weight:700; line-height:1;
+}
+.eye-row .radio-stack input[type="radio"] { margin:0; transform:scale(1.05); }
+
+/* Hide spinners (Chrome/Edge/Safari) */
+#therapistNumber::-webkit-outer-spin-button,
+#therapistNumber::-webkit-inner-spin-button,
+#hours::-webkit-outer-spin-button,
+#hours::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide spinners (Firefox) */
+#therapistNumber[type="number"],
+#hours[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Little popup hint above the clock */
+/* Little popup hint above the clock — bigger, white text on red */
+#clickHint {
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  transform: translate(-50%, -100%);
+  background: #d32f2f;          /* 🔴 red background */
+  color: #ffffff;                /* ⚪ white text */
+  padding: 10px 16px;            /* a bit more padding */
+  border-radius: 10px;
+  border: 1px solid #b71c1c;     /* darker red border */
+  font-size: 1.15rem;            /* larger font */
+  font-weight: 700;              /* bolder */
+  box-shadow: 0 4px 12px rgba(0,0,0,.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+  z-index: 9999;                 /* sits above everything */
+}
+#clickHint.show {
+  opacity: 1;
+  transform: translate(-50%, -110%);
+}
+#clickHint::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #d32f2f;     /* arrow matches red background */
+}
+
+#clickLog { display: none !important; }
+
+
 </style>
 </head>
 <body>
@@ -49,8 +152,8 @@
     <div class="form-group"><label for="participantNumber">Participant Code</label><input type="text" id="participantNumber"></div>
     <div class="form-group"><label for="issueName">Issue Feeling Name</label><input type="text" id="issueName"></div>
     <div class="form-group"><label for="modality">Therapy Modus</label><input type="text" id="modality"></div>
-    <div class="form-group"><label for="hours">Hours Used</label><input type="number" id="hours" min="0" step="0.5"></div>
-    <div class="form-group"><label for="sessionDate">Date </label><input type="text" id="sessionDate" placeholder="e.g. 20 Jun 2023"></div>
+    <div class="form-group"><label for="hours">Hours Used</label><input type="number" id="hours"></div>
+    <div class="form-group"><label for="sessionDate">Report Date </label><input type="text" id="sessionDate" placeholder="e.g. 20 Jun 2023"></div>
   </div>
 
   <h1></h1>
@@ -58,26 +161,63 @@
   <div class="input-containers">
     <div class="canvas-input">
       <div class="canvas-input-title">BEFORE</div>
-      <div class="canvas-input-group"><label for="startSudsInput">SUDS (1-10):</label><input type="number" id="startSudsInput" min="1" max="10" required></div>
+      <div class="canvas-input-group"><label for="startSudsInput">Feeling Level (1-10):</label><input type="number" id="startSudsInput" min="1" max="10" required></div>
       <div class="canvas-input-group"><label for="startDistance">Distance (m):</label><input type="number" id="startDistance" min="0" step="1" disabled></div>
-      <div class="canvas-input-group"><label for="startEyeLevel">Eye Level (cm):</label><input type="number" id="startEyeLevel" disabled></div>
-      <div class="canvas-input-group radio-group-small">
-        <div><input type="radio" id="startAbove" name="startPosition" value="above" checked disabled><label for="startAbove">Above</label></div>
-        <div><input type="radio" id="startBelow" name="startPosition" value="below" disabled><label for="startBelow">Below</label></div>
-        <div><input type="radio" id="startEyeLevelRadio" name="startPosition" value="eye-level" disabled><label for="startEyeLevelRadio">Eye Level</label></div>
-      </div>
+      <div class="canvas-input-group">
+	  <label for="startClockPos">Clock Position:</label>
+	  <input type="text" id="startClockPos" disabled>
+	</div>
+<div class="canvas-input-group">
+  <label for="startEyeLevel">Eye Level (cm):</label>
+  <div class="eye-row">
+    <div class="eye-left">
+      <input type="number" id="startEyeLevel" min="0" disabled>
+    </div>
+    <div class="eye-right">
+<div class="radio-stack">
+  <label for="startAbove">
+    <input type="radio" id="startAbove" name="startPosition" value="above" checked disabled>
+    <span>+</span>
+  </label>
+  <label for="startBelow">
+    <input type="radio" id="startBelow" name="startPosition" value="below" disabled>
+    <span>−</span>
+  </label>
+</div>
+    </div>
+  </div>
+</div>
+
     </div>
 
     <div class="canvas-input">
       <div class="canvas-input-title">AFTER</div>
-      <div class="canvas-input-group"><label for="endSudsInput">SUDS (1-10):</label><input type="number" id="endSudsInput" min="1" max="10" required disabled></div>
-      <div class="canvas-input-group"><label for="endDistance">Distance (m):</label><input type="number" id="endDistance" min="0" step="0.01" disabled></div>
-      <div class="canvas-input-group"><label for="endEyeLevel">Eye Level (cm):</label><input type="number" id="endEyeLevel" disabled></div>
-      <div class="canvas-input-group radio-group-small">
-        <div><input type="radio" id="endAbove" name="endPosition" value="above" checked disabled><label for="endAbove">Above</label></div>
-        <div><input type="radio" id="endBelow" name="endPosition" value="below" disabled><label for="endBelow">Below</label></div>
-        <div><input type="radio" id="endEyeLevelRadio" name="endPosition" value="eye-level" disabled><label for="endEyeLevelRadio">Eye Level</label></div>
-      </div>
+      <div class="canvas-input-group"><label for="endSudsInput">Feeling Level (1-10):</label><input type="number" id="endSudsInput" min="1" max="10" required disabled></div>
+      <div class="canvas-input-group"><label for="endDistance">Distance (m):</label><input type="number" id="endDistance" min="0" step="1" disabled></div>
+      <div class="canvas-input-group">
+		  <label for="endClockPos">Clock Position:</label>
+		  <input type="text" id="endClockPos" disabled>
+		</div>
+<div class="canvas-input-group">
+  <label for="endEyeLevel">Eye Level (cm):</label>
+  <div class="eye-row">
+    <div class="eye-left">
+      <input type="number" id="endEyeLevel"  min="0" disabled>
+    </div>
+    <div class="eye-right">
+<div class="radio-stack">
+  <label for="endAbove">
+    <input type="radio" id="endAbove" name="endPosition" value="above" checked disabled>
+    <span>+</span>
+  </label>
+  <label for="endBelow">
+    <input type="radio" id="endBelow" name="endPosition" value="below" disabled>
+    <span>−</span>
+  </label>
+</div>
+    </div>
+  </div>
+</div>
     </div>
   </div>
 
@@ -91,6 +231,8 @@
   </div>
   <div id="clickLog"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const canvas = document.getElementById('clockCanvas');
@@ -99,6 +241,25 @@ document.addEventListener('DOMContentLoaded', function() {
   const downloadBtn = document.getElementById('downloadBtn');
   const resetBtn = document.getElementById('resetBtn');
   const clockContainer = document.getElementById('clockContainer');
+  
+  // Toast bubble for "Now click the clock face"
+const clickHint = document.createElement('div');
+clickHint.id = 'clickHint';
+clickHint.textContent = 'Now click the clock face';
+clockContainer.appendChild(clickHint);
+
+function showClickHint() {
+  clickHint.classList.add('show');
+  // Bring the clock into view on small screens
+  clockContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function hideClickHint() {
+  clickHint.classList.remove('show');
+}
+
+
+	const startClockPosInput = document.getElementById('startClockPos');
+	const endClockPosInput   = document.getElementById('endClockPos');
 
   const centerX = canvas.width / 2;
   const centerY = canvas.height / 2;
@@ -149,30 +310,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const startEyeLevelInput = document.getElementById('startEyeLevel');
   const startAboveInput = document.getElementById('startAbove');
   const startBelowInput = document.getElementById('startBelow');
-  const startEyeLevelRadio = document.getElementById('startEyeLevelRadio');
+
 
   const endSudsInput = document.getElementById('endSudsInput');
   const endDistanceInput = document.getElementById('endDistance');
   const endEyeLevelInput = document.getElementById('endEyeLevel');
   const endAboveInput = document.getElementById('endAbove');
   const endBelowInput = document.getElementById('endBelow');
-  const endEyeLevelRadio = document.getElementById('endEyeLevelRadio');
+  
 
-  function handleEyeLevelRadio(radio, eyeLevelInput) {
-    if (radio.checked && radio.value === 'eye-level') {
-      eyeLevelInput.value = '0';
-      eyeLevelInput.disabled = true;
-    } else {
-      eyeLevelInput.disabled = false;
-    }
-    updateFieldStates();
-  }
-  [startAboveInput, startBelowInput, startEyeLevelRadio].forEach(radio => {
-    radio.addEventListener('change', () => handleEyeLevelRadio(radio, startEyeLevelInput));
-  });
-  [endAboveInput, endBelowInput, endEyeLevelRadio].forEach(radio => {
-    radio.addEventListener('change', () => handleEyeLevelRadio(radio, endEyeLevelInput));
-  });
+	[startAboveInput, startBelowInput].forEach(radio => {
+	  radio.addEventListener('change', updateFieldStates);
+	});
+	[endAboveInput, endBelowInput].forEach(radio => {
+	  radio.addEventListener('change', updateFieldStates);
+	});
 
   ['participantNumber', 'issueName', 'modality'].forEach(id => {
     const field = document.getElementById(id);
@@ -182,6 +334,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const field = document.getElementById(id);
     field.addEventListener('input', function() { this.value = this.value.replace(/[^A-Za-z]/g, '').toUpperCase(); updateFieldStates(); });
   });
+
+['startEyeLevel', 'endEyeLevel'].forEach(id => {
+  const el = document.getElementById(id);
+
+  // Block minus and scientific notation keys
+  el.addEventListener('keydown', e => {
+    if (e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+  });
+
+  // Clamp live while typing
+  el.addEventListener('input', () => {
+    if (el.value === '') return;                // allow clearing
+    const v = parseFloat(el.value);
+    if (isNaN(v) || v < 0) el.value = 0;
+  });
+
+  // Final clamp on change/blur
+  el.addEventListener('change', () => {
+    const v = parseFloat(el.value);
+    el.value = isNaN(v) ? '' : Math.max(0, v);
+  });
+});
 
   function resetData() {
     clicks = [];
@@ -194,58 +368,99 @@ document.addEventListener('DOMContentLoaded', function() {
     endSudsInput.value = '';
     endDistanceInput.value = '';
     endEyeLevelInput.value = '';
+	startClockPosInput.value = '';
+	startClockPosInput.disabled = true;
+	endClockPosInput.value = '';
+	endClockPosInput.disabled = true;
     endAboveInput.checked = true;
     endSudsValue = null;
 
     clickLog.innerHTML = '';
     labelStart.style.display = 'none';
     labelEnd.style.display = 'none';
-
+	hideClickHint();
     drawClock();
     updateFieldStates();
   }
   resetBtn.addEventListener('click', resetData);
 
-  function updateFieldStates() {
-    const startFieldsComplete = startSudsValue !== null;
+['therapistNumber','hours'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+  el.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+  });
+});
 
-    const beforeEnabled = startFieldsComplete && clicks.length > 0;
-    startDistanceInput.disabled = !beforeEnabled;
-    startEyeLevelInput.disabled = !beforeEnabled;
-    startAboveInput.disabled = !beforeEnabled;
-    startBelowInput.disabled = !beforeEnabled;
-    startEyeLevelRadio.disabled = !beforeEnabled;
+function updateFieldStates() {
+  const startValid = Number.isInteger(startSudsValue) && startSudsValue >= 1 && startSudsValue <= 10;
+  const endValid   = Number.isInteger(endSudsValue)   && endSudsValue   >= 1 && endSudsValue   <= 10;
 
-    const endSectionEnabled = startFieldsComplete && clicks.length >= 1;
-    endSudsInput.disabled = !endSectionEnabled;
+  const hasStartClick = !!clicks[0]; // first (BEFORE) click exists
+  const hasEndClick   = !!clicks[1]; // second (AFTER)  click exists
 
-    const endReady = endSectionEnabled && clicks.length >= 2 && endSudsValue !== null;
-    endDistanceInput.disabled = !endReady;
-    endEyeLevelInput.disabled = !endReady;
-    endAboveInput.disabled = !endReady;
-    endBelowInput.disabled = !endReady;
-    endEyeLevelRadio.disabled = !endReady;
+  // You asked for: SUDS + click required to edit other fields
+  const beforeReady = startValid && hasStartClick;
+  const afterReady  = endValid   && hasEndClick;
 
-    const commonFilled = ['therapistNumber','participantNumber','issueName','modality','hours','sessionDate'].every(isFilled);
-    const beforeFilled = startFieldsComplete && clicks.length >= 1 && isFilled('startDistance') && isFilled('startEyeLevel');
-    const afterFilled  = endSudsValue !== null && clicks.length >= 2 && isFilled('endDistance') && isFilled('endEyeLevel');
+  // BEFORE (keep SUDS always editable; gate the rest on beforeReady)
+  startClockPosInput.disabled = !beforeReady;
+  startDistanceInput.disabled = !beforeReady;
+  startEyeLevelInput.disabled = !beforeReady;
+  startAboveInput.disabled    = !beforeReady;
+  startBelowInput.disabled    = !beforeReady;
 
-    downloadBtn.disabled = !(commonFilled && beforeFilled && afterFilled);
+  // AFTER SUDS: allow only after BEFORE is complete enough to have a first click
+  endSudsInput.disabled = !(startValid && hasStartClick);
+
+  // AFTER (gate on End SUDS + second click)
+  endClockPosInput.disabled = !afterReady;
+  endDistanceInput.disabled = !afterReady;
+  endEyeLevelInput.disabled = !afterReady;
+  endAboveInput.disabled    = !afterReady;
+  endBelowInput.disabled    = !afterReady;
+
+  // Download requires both clicks + all fields filled
+  const commonFilled = ['therapistNumber','participantNumber','issueName','modality','hours','sessionDate'].every(isFilled);
+  const beforeFilled = beforeReady && ['startClockPos','startDistance','startEyeLevel'].every(isFilled);
+  const afterFilled  = afterReady  && ['endClockPos','endDistance','endEyeLevel'].every(isFilled);
+  downloadBtn.disabled = !(commonFilled && beforeFilled && afterFilled);
+}
+
+
+
+startSudsInput.addEventListener('change', function() {
+  const v = parseInt(this.value);
+  if (v >= 1 && v <= 10) {
+    startSudsValue = v;
+    this.classList.remove('required-field');
+    // If we don't have the BEFORE click yet, prompt the user to click the clock
+    if (!clicks[0]) showClickHint(); else hideClickHint();
+  } else {
+    startSudsValue = null;
+    this.classList.add('required-field');
+    hideClickHint();
   }
+  updateFieldStates(); 
+  updateLog();
+});
 
-  startSudsInput.addEventListener('change', function() {
-    const v = parseInt(this.value);
-    if (v >= 1 && v <= 10) { startSudsValue = v; this.classList.remove('required-field'); }
-    else { startSudsValue = null; this.classList.add('required-field'); }
-    updateFieldStates(); updateLog();
-  });
 
-  endSudsInput.addEventListener('change', function() {
-    const v = parseInt(this.value);
-    if (v >= 1 && v <= 10) { endSudsValue = v; this.classList.remove('required-field'); }
-    else { endSudsValue = null; this.classList.add('required-field'); }
-    updateLog(); updateFieldStates();
-  });
+endSudsInput.addEventListener('change', function() {
+  const v = parseInt(this.value);
+  if (v >= 1 && v <= 10) {
+    endSudsValue = v;
+    this.classList.remove('required-field');
+    // If we only have the BEFORE click so far, prompt for the AFTER click
+    if (clicks.length === 1 && !clicks[1]) showClickHint(); else hideClickHint();
+  } else {
+    endSudsValue = null;
+    this.classList.add('required-field');
+    hideClickHint();
+  }
+  updateLog(); 
+  updateFieldStates();
+});
 
   function drawClock() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -326,39 +541,44 @@ document.addEventListener('DOMContentLoaded', function() {
     return hour;
   }
 
-  canvas.addEventListener('click', function(e) {
-    if (!startSudsValue) return;
-    if (clicks.length === 1 && !endSudsValue) return;
-    if (clicks.length >= 2) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    const dist = Math.hypot(x - centerX, y - centerY);
-    if (dist > radius || dist < 50) return;
+canvas.addEventListener('click', function(e) {
+  if (!startSudsValue) return;
+  if (clicks.length === 1 && !endSudsValue) return;
+  if (clicks.length >= 2) return;
 
-    for (let i = 0; i < clicks.length; i++) {
-      const c = clicks[i];
-      if (Math.hypot(x - c.x, y - c.y) <= 10) return;
-    }
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    const hour = getHourSegment(x, y);
-    const timestamp = new Date().toLocaleTimeString();
+  const dist = Math.hypot(x - centerX, y - centerY);
+  if (dist > radius || dist < 50) return;
 
-    clicks.push({ x, y, hour, timestamp });
+  for (let i = 0; i < clicks.length; i++) {
+    const c = clicks[i];
+    if (Math.hypot(x - c.x, y - c.y) <= 10) return;
+  }
 
-    drawClock();
-    updateLog();
-    updateFieldStates();
-  });
+  const hour = getHourSegment(x, y);
+  const timestamp = new Date().toLocaleTimeString();
+
+  clicks.push({ x, y, hour, timestamp });
+
+  // Hide the hint once a valid click is recorded
+  hideClickHint();
+
+  drawClock();
+  updateLog();
+  updateFieldStates();
+});
 
   function updateLog() {
     clickLog.innerHTML = '';
     for (let i = 0; i < clicks.length; i++) {
       const pos = i === 0 ? 
-        (startAboveInput.checked ? 'Above' : startBelowInput.checked ? 'Below' : 'Eye Level') :
-        (endAboveInput.checked ? 'Above' : endBelowInput.checked ? 'Below' : 'Eye Level');
+		(startAboveInput.checked ? 'Above' : startBelowInput.checked ? 'Below' : 'Unknown')
+		:(endAboveInput.checked   ? 'Above' : endBelowInput.checked   ? 'Below' : 'Unknown');
       const dist = i === 0 ? (startDistanceInput.value || '?') : (endDistanceInput.value || '?'); 
       const eye  = i === 0 ? (startEyeLevelInput.value || '?') : (endEyeLevelInput.value || '?');
       const suds = i === 0 ? startSudsValue : endSudsValue;
@@ -366,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const div = document.createElement('div');
       div.className = 'log-entry';
       div.style.color = i === 0 ? '#FF5733' : '#33FF57';
-      div.textContent = `${prefix} (${i === 0 ? 'Before' : 'After'}): SUDS=${suds || '?'}, Distance=${dist}m, Eye Level Position=${eye}cm ${pos}`;
+      div.textContent = `${prefix} (${i === 0 ? 'Before' : 'After'}): Feeling Level=${suds || '?'}, Distance=${dist}m, Eye Level Position=${eye}cm ${pos}`;
       clickLog.appendChild(div);
     }
     clickLog.scrollTop = clickLog.scrollHeight;
@@ -380,106 +600,67 @@ document.addEventListener('DOMContentLoaded', function() {
     const hours = document.getElementById('hours').value || '0';
     const date = document.getElementById('sessionDate').value || 'NA';
 
-    const startPosition = startAboveInput.checked ? 'above' : startBelowInput.checked ? 'below' : 'eye-level';
-    const endPosition   = endAboveInput.checked ? 'above' : endBelowInput.checked ? 'below' : 'eye-level';
-
+	const startPosition = startAboveInput.checked ? 'above' : startBelowInput.checked ? 'below' : 'unknown';
+	const endPosition   = endAboveInput.checked   ? 'above' : endBelowInput.checked   ? 'below' : 'unknown';
     const startHour = clicks[0]?.hour || 'NA';
     const endHour   = clicks[1]?.hour || 'NA';
 
-    const header = "therapist;participant;issue;modality;hours;date;startSUDS;startDistance;startEyeLevel;startPosition;startHour;endSUDS;endDistance;endEyeLevel;endPosition;endHour";
-    const data = [
-      therapist, participant, issue, modality, hours, date,
-      startSudsValue || 'NA', startDistanceInput.value || 'NA', startEyeLevelInput.value || 'NA', startPosition, startHour,
-      endSudsValue || 'NA', endDistanceInput.value || 'NA', endEyeLevelInput.value || 'NA', endPosition, endHour
-    ].join(';');
+    const header = "therapist;participant;issue;modality;hours;date;startSUDS;startClockPos;startDistance;startEyeLevel;startPosition;startHour;endSUDS;endClockPos;endDistance;endEyeLevel;endPosition;endHour";
+	const data = [
+	  therapist, participant, issue, modality, hours, date,
+	  startSudsValue || 'NA',
+	  startClockPosInput.value || 'NA',        // NEW
+	  startDistanceInput.value || 'NA',
+	  startEyeLevelInput.value || 'NA',
+	  startPosition, startHour,
+	  endSudsValue || 'NA',
+	  endClockPosInput.value || 'NA',          // NEW
+	  endDistanceInput.value || 'NA',
+	  endEyeLevelInput.value || 'NA',
+	  endPosition, endHour
+	].join(';');
     return header + '\n' + data;
   }
 
-  ['therapistNumber','participantNumber','issueName','modality','hours','sessionDate',
-   'startDistance','startEyeLevel','endDistance','endEyeLevel'
-  ].forEach(id => {
-    const el = document.getElementById(id);
-    el.addEventListener('input', () => { updateFieldStates(); updateLog(); });
-    el.addEventListener('change', () => { updateFieldStates(); updateLog(); });
-  });
+[
+  'therapistNumber','participantNumber','issueName','modality','hours','sessionDate',
+  'startClockPos','endClockPos',                 // <-- add these
+  'startDistance','startEyeLevel','endDistance','endEyeLevel'
+].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => { updateFieldStates(); updateLog(); });
+  el.addEventListener('change', () => { updateFieldStates(); updateLog(); });
+});
 
-  downloadBtn.addEventListener('click', function() {
+   downloadBtn.addEventListener('click', async function () {
     if (downloadBtn.disabled) return;
-
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height + 250;
-    const tempCtx = tempCanvas.getContext('2d');
-
-    tempCtx.fillStyle = 'white';
-    tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-    tempCtx.drawImage(canvas, 0, 0);
-
-    // === NEW: bake labels onto PNG ===
-    tempCtx.font = 'bold 14px Arial';
-    tempCtx.textAlign = 'center';
-    tempCtx.textBaseline = 'top';
-    for (let i = 0; i < Math.min(clicks.length, 2); i++) {
-      const c = clicks[i];
-      const text = i === 0 ? 'BEFORE' : 'AFTER';
-      tempCtx.fillStyle = i === 0 ? colorPalette[0] : colorPalette[1];
-      tempCtx.fillText(text, c.x, c.y + 15);
-    }
-
-    tempCtx.font = 'bold 12px Arial';
-    tempCtx.fillStyle = '#000';
-    tempCtx.textAlign = 'left';
-
-    let yPos = canvas.height + 40;
-    tempCtx.fillText('Session Information', 20, yPos); yPos += 30;
-    tempCtx.fillText('Therapist', 20, yPos);
-    tempCtx.fillText('Participant', 105, yPos);
-    tempCtx.fillText('Modality', 190, yPos);
-    tempCtx.fillText('Issue', 275, yPos);
-    tempCtx.fillText('Hours', 355, yPos);
-    tempCtx.fillText('Date', 420, yPos); yPos += 20;
-
-    tempCtx.font = '12px Arial';
-    tempCtx.fillText(document.getElementById('therapistNumber').value || 'N/A', 20, yPos);
-    tempCtx.fillText(document.getElementById('participantNumber').value || 'N/A', 105, yPos);
-    tempCtx.fillText(document.getElementById('modality').value || 'N/A', 190, yPos);
-    tempCtx.fillText(document.getElementById('issueName').value || 'N/A', 275, yPos);
-    tempCtx.fillText(document.getElementById('hours').value || '0', 355, yPos);
-    tempCtx.fillText(document.getElementById('sessionDate').value || 'N/A', 420, yPos); yPos += 40;
-
-    tempCtx.font = 'bold 12px Arial'; tempCtx.fillText('Measurements', 20, yPos); yPos += 30;
-    tempCtx.fillText('', 20, yPos);
-    tempCtx.fillText('SUDS', 120, yPos);
-    tempCtx.fillText('Distance(m)', 180, yPos);
-    tempCtx.fillText('Eye Level(cm)', 280, yPos);
-    tempCtx.fillText('Position', 390, yPos); yPos += 20;
-
-    const startPosition = startAboveInput.checked ? 'Above' : startBelowInput.checked ? 'Below' : 'Eye Level';
-    const endPosition = endAboveInput.checked ? 'Above' : endBelowInput.checked ? 'Below' : 'Eye Level';
-
-    tempCtx.fillText('BEFORE (A)', 20, yPos);
-    tempCtx.fillText(startSudsValue || 'N/A', 120, yPos);
-    tempCtx.fillText(startDistanceInput.value || 'N/A', 180, yPos);
-    tempCtx.fillText(startEyeLevelInput.value || 'N/A', 280, yPos);
-    tempCtx.fillText(startPosition, 390, yPos); yPos += 20;
-
-    tempCtx.fillText('AFTER (B)', 20, yPos);
-    tempCtx.fillText(endSudsValue || 'N/A', 120, yPos);
-    tempCtx.fillText(endDistanceInput.value || 'N/A', 180, yPos);
-    tempCtx.fillText(endEyeLevelInput.value || 'N/A', 280, yPos);
-    tempCtx.fillText(endPosition, 390, yPos);
 
     const prefix = makePrefix();
 
+    // If you only want a specific section, wrap it in <div id="formRoot">...</div>
+    // and use: const target = document.getElementById('formRoot');
+    const target = document.body;
+
+    // Ensure we start from the top so nothing gets clipped
+    window.scrollTo(0, 0);
+
+    // Render the DOM to a canvas
+    const shot = await html2canvas(target, {
+      backgroundColor: '#ffffff',
+      scale: 2,          // sharper image
+      useCORS: true      // safe even with your base64 logo
+    });
+
+    // Download the PNG of the whole form/page
     const link = document.createElement('a');
-    link.download = `${prefix}-clock.png`;
-    link.href = tempCanvas.toDataURL('image/png');
+    link.download = `${prefix}-form.png`;
+    link.href = shot.toDataURL('image/png');
     link.click();
 
+    // Keep your data.txt download exactly as before
     const dataLine = createDataLine();
-    const dataBlob = new Blob([dataLine], {type: 'text/plain'});
+    const dataBlob = new Blob([dataLine], { type: 'text/plain' });
     const dataUrl = URL.createObjectURL(dataBlob);
-
     const dataLink = document.createElement('a');
     dataLink.download = `${prefix}-data.txt`;
     dataLink.href = dataUrl;

@@ -111,18 +111,20 @@
   top: -8px;
   transform: translate(-50%, -100%);
   background: #d32f2f;          /* 🔴 red background */
-  color: #ffffff;                /* ⚪ white text */
-  padding: 10px 16px;            /* a bit more padding */
+  color: #ffffff;               /* ⚪ white text */
+  padding: 10px 16px;
   border-radius: 10px;
-  border: 1px solid #b71c1c;     /* darker red border */
-  font-size: 1.15rem;            /* larger font */
-  font-weight: 700;              /* bolder */
+  border: 1px solid #b71c1c;
+  font-size: 1.25rem;           /* ⬆ font size */
+  font-weight: 700;
+  white-space: nowrap;          /* 🚫 prevent wrapping */
   box-shadow: 0 4px 12px rgba(0,0,0,.25);
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s ease, transform .18s ease;
-  z-index: 9999;                 /* sits above everything */
+  z-index: 9999;
 }
+
 #clickHint.show {
   opacity: 1;
   transform: translate(-50%, -110%);

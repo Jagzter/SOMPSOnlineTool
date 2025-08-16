@@ -110,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function() {
   let startSudsValue = null;
   let endSudsValue = null;
 
-  // Create DOM labels and attach to container
   const labelStart = document.createElement('div');
   const labelEnd = document.createElement('div');
   [labelStart, labelEnd].forEach(l => {
@@ -119,7 +118,6 @@ document.addEventListener('DOMContentLoaded', function() {
     clockContainer.appendChild(l);
   });
 
-  // Helpers
   function safeSlug(v, fallback = 'NA') {
     v = (v ?? '').toString().trim();
     if (!v) return fallback;
@@ -146,7 +144,6 @@ document.addEventListener('DOMContentLoaded', function() {
     return el && el.value != null && String(el.value).trim() !== '';
   }
 
-  // Inputs
   const startSudsInput = document.getElementById('startSudsInput');
   const startDistanceInput = document.getElementById('startDistance');
   const startEyeLevelInput = document.getElementById('startEyeLevel');
@@ -251,15 +248,11 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   function drawClock() {
-    // Clear
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
     // Face
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.beginPath(); ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
-
-    // Hour markers + numbers
+    // Hour markers + nums
     ctx.font = 'bold 16px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#333';
     for (let i = 1; i <= 12; i++) {
       const angle = (i - 3) * Math.PI / 6;
@@ -270,7 +263,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const textY = centerY + Math.sin(angle) * (radius * 0.9);
       ctx.fillText(i.toString(), textX, textY);
     }
-
     // Center marker
     const circleRadius = 30;
     ctx.beginPath(); ctx.arc(centerX, centerY, circleRadius, 0, 2 * Math.PI);
@@ -292,11 +284,9 @@ document.addEventListener('DOMContentLoaded', function() {
       ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.stroke();
     }
 
-    // After drawing, update label positions to match visuals
     updateLabelPositions();
   }
 
-  // Keeps labels under dots accounting for CSS scaling and container offsets.
   function updateLabelPositions() {
     const containerRect = clockContainer.getBoundingClientRect();
     const canvasRect = canvas.getBoundingClientRect();
@@ -306,7 +296,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const scaleY = canvas.clientHeight / canvas.height;
     const below = 20;
 
-    // Hide both by default
     labelStart.style.display = 'none';
     labelEnd.style.display = 'none';
 
@@ -326,7 +315,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // Reposition labels on resize/orientation changes
   window.addEventListener('resize', updateLabelPositions);
   window.addEventListener('orientationchange', () => setTimeout(updateLabelPositions, 100));
 
@@ -339,21 +327,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   canvas.addEventListener('click', function(e) {
-    // Gate: require BEFORE SUDS, and for second click require AFTER SUDS.
     if (!startSudsValue) return;
     if (clicks.length === 1 && !endSudsValue) return;
     if (clicks.length >= 2) return;
 
     const rect = canvas.getBoundingClientRect();
-    // Convert client coords to canvas intrinsic coords (handles CSS scaling)
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
 
-    // Within annulus
     const dist = Math.hypot(x - centerX, y - centerY);
     if (dist > radius || dist < 50) return;
 
-    // Avoid clicking on top of existing dot
     for (let i = 0; i < clicks.length; i++) {
       const c = clicks[i];
       if (Math.hypot(x - c.x, y - c.y) <= 10) return;
@@ -411,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function() {
     return header + '\n' + data;
   }
 
-  // Tie field changes to state updates
   ['therapistNumber','participantNumber','issueName','modality','hours','sessionDate',
    'startDistance','startEyeLevel','endDistance','endEyeLevel'
   ].forEach(id => {
@@ -431,6 +414,17 @@ document.addEventListener('DOMContentLoaded', function() {
     tempCtx.fillStyle = 'white';
     tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
     tempCtx.drawImage(canvas, 0, 0);
+
+    // === NEW: bake labels onto PNG ===
+    tempCtx.font = 'bold 14px Arial';
+    tempCtx.textAlign = 'center';
+    tempCtx.textBaseline = 'top';
+    for (let i = 0; i < Math.min(clicks.length, 2); i++) {
+      const c = clicks[i];
+      const text = i === 0 ? 'BEFORE' : 'AFTER';
+      tempCtx.fillStyle = i === 0 ? colorPalette[0] : colorPalette[1];
+      tempCtx.fillText(text, c.x, c.y + 15);
+    }
 
     tempCtx.font = 'bold 12px Arial';
     tempCtx.fillStyle = '#000';
@@ -495,7 +489,6 @@ document.addEventListener('DOMContentLoaded', function() {
     URL.revokeObjectURL(dataUrl);
   });
 
-  // Default date
   const today = new Date();
   const day = today.getDate().toString().padStart(2, '0');
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -503,7 +496,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const year = today.getFullYear();
   document.getElementById('sessionDate').value = `${day} ${month} ${year}`;
 
-  // Initial render
   updateFieldStates();
   drawClock();
 });

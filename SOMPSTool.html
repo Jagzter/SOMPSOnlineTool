@@ -110,8 +110,8 @@
   left: 50%;
   top: -8px;
   transform: translate(-50%, -100%);
-  background: #d32f2f;          /* 🔴 red background */
-  color: #ffffff;               /* ⚪ white text */
+  background: #E5FFCC;          /* light green background */
+  color: #000000;               /* black text */
   padding: 10px 16px;
   border-radius: 10px;
   border: 1px solid #b71c1c;
@@ -141,7 +141,15 @@
 
 #clickLog { display: none !important; }
 
-
+/* fix cropped numbers in PNG */
+input[type="number"],
+input[type="text"],
+input[type="date"]{
+  font-size: 0.875rem;
+  line-height: 1.4;   /* key: more vertical room for html2canvas */
+  padding: 10px 8px;  /* a touch more bottom padding also works */
+  box-sizing: border-box;
+}
 </style>
 </head>
 <body>
@@ -247,12 +255,23 @@ document.addEventListener('DOMContentLoaded', function() {
   // Toast bubble for "Now click the clock face"
 const clickHint = document.createElement('div');
 clickHint.id = 'clickHint';
-clickHint.textContent = 'Now click the clock face';
+clickHint.textContent = 'Now click on the clock face to register location';
 clockContainer.appendChild(clickHint);
 
 function showClickHint() {
+  // Set the correct message depending on which click we're waiting for
+  if (clicks.length === 0) {
+    clickHint.textContent = "Click on the clock face to register the BEFORE location";
+  } else if (clicks.length === 1) {
+    clickHint.textContent = "Click on the clock face to register the AFTER location";
+  } else {
+    clickHint.textContent = "";
+  }
+
+  // Use the CSS-driven visibility you already have
   clickHint.classList.add('show');
-  // Bring the clock into view on small screens
+
+  // Keep the clock in view on small screens
   clockContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 function hideClickHint() {
@@ -394,40 +413,47 @@ function hideClickHint() {
   });
 });
 
-function updateFieldStates() {
+function isBeforeComplete() {
   const startValid = Number.isInteger(startSudsValue) && startSudsValue >= 1 && startSudsValue <= 10;
-  const endValid   = Number.isInteger(endSudsValue)   && endSudsValue   >= 1 && endSudsValue   <= 10;
+  const hasStartClick = !!clicks[0];
+  const beforeFieldsFilled = ['startClockPos','startDistance','startEyeLevel'].every(isFilled);
+  return startValid && hasStartClick && beforeFieldsFilled;
+}
 
-  const hasStartClick = !!clicks[0]; // first (BEFORE) click exists
-  const hasEndClick   = !!clicks[1]; // second (AFTER)  click exists
+function updateFieldStates() {
+  const startValid   = Number.isInteger(startSudsValue) && startSudsValue >= 1 && startSudsValue <= 10;
+  const endValid     = Number.isInteger(endSudsValue)   && endSudsValue   >= 1 && endSudsValue   <= 10;
+  const hasStartClick = !!clicks[0];
+  const hasEndClick   = !!clicks[1];
 
-  // You asked for: SUDS + click required to edit other fields
-  const beforeReady = startValid && hasStartClick;
-  const afterReady  = endValid   && hasEndClick;
+  // BEFORE gating
+  const beforeReady   = startValid && hasStartClick;          // to enable BEFORE inputs
+  const beforeComplete = isBeforeComplete();                  // to unlock AFTER SUDS
 
-  // BEFORE (keep SUDS always editable; gate the rest on beforeReady)
   startClockPosInput.disabled = !beforeReady;
   startDistanceInput.disabled = !beforeReady;
   startEyeLevelInput.disabled = !beforeReady;
   startAboveInput.disabled    = !beforeReady;
   startBelowInput.disabled    = !beforeReady;
 
-  // AFTER SUDS: allow only after BEFORE is complete enough to have a first click
-  endSudsInput.disabled = !(startValid && hasStartClick);
+  // AFTER SUDS enabled only when ALL BEFORE fields are complete
+  endSudsInput.disabled = !beforeComplete;
 
-  // AFTER (gate on End SUDS + second click)
+  // AFTER fields enabled only when end SUDS + second click
+  const afterReady = endValid && hasEndClick;
   endClockPosInput.disabled = !afterReady;
   endDistanceInput.disabled = !afterReady;
   endEyeLevelInput.disabled = !afterReady;
   endAboveInput.disabled    = !afterReady;
   endBelowInput.disabled    = !afterReady;
 
-  // Download requires both clicks + all fields filled
+  // Download requires both sides complete
   const commonFilled = ['therapistNumber','participantNumber','issueName','modality','hours','sessionDate'].every(isFilled);
-  const beforeFilled = beforeReady && ['startClockPos','startDistance','startEyeLevel'].every(isFilled);
-  const afterFilled  = afterReady  && ['endClockPos','endDistance','endEyeLevel'].every(isFilled);
+  const beforeFilled = beforeComplete; // already checks all before fields
+  const afterFilled  = afterReady && ['endClockPos','endDistance','endEyeLevel'].every(isFilled);
   downloadBtn.disabled = !(commonFilled && beforeFilled && afterFilled);
 }
+
 
 
 
@@ -546,10 +572,13 @@ endSudsInput.addEventListener('change', function() {
 
 
 canvas.addEventListener('click', function(e) {
+  // First click requires BEFORE SUDS
   if (!startSudsValue) return;
-  if (clicks.length === 1 && !endSudsValue) return;
-  if (clicks.length >= 2) return;
 
+  // Second click requires all BEFORE fields complete + AFTER SUDS entered
+  if (clicks.length === 1 && !(isBeforeComplete() && endSudsValue)) return;
+
+  if (clicks.length >= 2) return;
   const rect = canvas.getBoundingClientRect();
   const x = (e.clientX - rect.left) * (canvas.width / rect.width);
   const y = (e.clientY - rect.top) * (canvas.height / rect.height);

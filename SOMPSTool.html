@@ -161,6 +161,28 @@ input[type="date"]{
   text-align: center;
 }
 
+/* Simple modal popup (matches your clean UI) */
+#popupOverlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.35);
+  display: none; align-items: center; justify-content: center;
+  z-index: 10000;
+}
+#popupBox {
+  background: #fff; border: 1px solid #ddd; border-radius: 10px;
+  max-width: 520px; width: calc(100% - 40px); padding: 16px 18px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.25); font-size: 0.95rem;
+}
+#popupBox h3 { margin: 0 0 8px; font-size: 1.1rem; }
+#popupBox pre {
+  background: #f7f7f7; border: 1px solid #eee; border-radius: 6px;
+  padding: 10px; overflow: auto; margin: 8px 0 12px; font-size: .9rem;
+}
+#popupClose {
+  display: inline-block; background: #4CAF50; color: #fff; border: 0;
+  border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 1rem;
+}
+#popupClose:hover { background: #45a049; }
+
 </style>
 </head>
 <body>
@@ -349,6 +371,22 @@ function hideClickHint() {
   const endEyeLevelInput = document.getElementById('endEyeLevel');
   const endAboveInput = document.getElementById('endAbove');
   const endBelowInput = document.getElementById('endBelow');
+  
+  function showPopup(html) {
+  const overlay = document.getElementById('popupOverlay');
+  const msg = document.getElementById('popupMsg');
+  msg.innerHTML = html;              // we control the content we pass in
+  overlay.style.display = 'flex';
+  document.getElementById('popupClose').focus();
+}
+function hidePopup() {
+  document.getElementById('popupOverlay').style.display = 'none';
+}
+document.getElementById('popupClose').addEventListener('click', hidePopup);
+// Allow ESC to close
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hidePopup();
+});
   
 
 	[startAboveInput, startBelowInput].forEach(radio => {
@@ -674,44 +712,51 @@ canvas.addEventListener('click', function(e) {
   el.addEventListener('change', () => { updateFieldStates(); updateLog(); });
 });
 
-   downloadBtn.addEventListener('click', async function () {
-    if (downloadBtn.disabled) return;
+downloadBtn.addEventListener('click', async function () {
+  if (downloadBtn.disabled) return;
 
-    const prefix = makePrefix();
+  const prefix = makePrefix();
+  const pngName  = `${prefix}-form.png`;
+  const txtName  = `${prefix}-data.txt`;
 
-    // If you only want a specific section, wrap it in <div id="formRoot">...</div>
-    // and use: const target = document.getElementById('formRoot');
-    const target = document.body;
+  // Make sure we capture the screen first
+  const target = document.body;
+  window.scrollTo(0, 0);
 
-    // Ensure we start from the top so nothing gets clipped
-    window.scrollTo(0, 0);
-
-    // Render the DOM to a canvas
-    const shot = await html2canvas(target, {
-      backgroundColor: '#ffffff',
-      scale: 2,          // sharper image
-      useCORS: true      // safe even with your base64 logo
-    });
-
-    // Download the PNG of the whole form/page
-    const link = document.createElement('a');
-    link.download = `${prefix}-form.png`;
-    link.href = shot.toDataURL('image/png');
-    link.click();
-
-    // Keep your data.txt download exactly as before
-    const dataLine = createDataLine();
-    const dataBlob = new Blob([dataLine], { type: 'text/plain' });
-    const dataUrl = URL.createObjectURL(dataBlob);
-    const dataLink = document.createElement('a');
-    dataLink.download = `${prefix}-data.txt`;
-    dataLink.href = dataUrl;
-    document.body.appendChild(dataLink);
-    dataLink.click();
-    document.body.removeChild(dataLink);
-    URL.revokeObjectURL(dataUrl);
+  const shot = await html2canvas(target, {
+    backgroundColor: '#ffffff',
+    scale: 2,
+    useCORS: true
   });
 
+  // Trigger PNG download
+  const link = document.createElement('a');
+  link.download = pngName;
+  link.href = shot.toDataURL('image/png');
+  link.click();
+
+  // Prepare and trigger TXT download
+  const dataLine = createDataLine();
+  const dataBlob = new Blob([dataLine], { type: 'text/plain' });
+  const dataUrl  = URL.createObjectURL(dataBlob);
+  const dataLink = document.createElement('a');
+  dataLink.download = txtName;
+  dataLink.href = dataUrl;
+  document.body.appendChild(dataLink);
+  dataLink.click();
+  document.body.removeChild(dataLink);
+  URL.revokeObjectURL(dataUrl);
+
+  // ✅ Show confirmation popup with filenames
+  showPopup(`
+    <p>Files have been saved to your browser’s default <strong>Downloads</strong> folder.</p>
+    <pre>
+${pngName}
+${txtName}
+    </pre>
+    <p>If you’ve changed your browser’s download location, they’ll be there instead.</p>
+  `);
+});
   const today = new Date();
   const day = today.getDate().toString().padStart(2, '0');
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -723,5 +768,12 @@ canvas.addEventListener('click', function(e) {
   drawClock();
 });
 </script>
+<div id="popupOverlay" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+  <div id="popupBox">
+    <h3 id="popupTitle">Files downloaded</h3>
+    <div id="popupMsg"></div>
+    <button id="popupClose">OK</button>
+  </div>
+</div>
 </body>
 </html>

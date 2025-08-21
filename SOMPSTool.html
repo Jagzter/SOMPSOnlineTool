@@ -208,7 +208,7 @@ input[type="date"]{
       <div class="canvas-input-group"><label for="startDistance">Distance (m):</label><input type="number" id="startDistance" min="0" step="1" disabled></div>
       <div class="canvas-input-group">
 	  <label for="startClockPos">Clock Position:</label>
-	  <input type="text" id="startClockPos" disabled>
+	  <input type="text" id="startClockPos" disabled pattern="^\d{2}:\d{2}$" placeholder="hh:mm">
 	</div>
 <div class="canvas-input-group">
   <label for="startEyeLevel">Eye Level (cm):</label>
@@ -239,7 +239,7 @@ input[type="date"]{
       <div class="canvas-input-group"><label for="endDistance">Distance (m):</label><input type="number" id="endDistance" min="0" step="1" disabled></div>
       <div class="canvas-input-group">
 		  <label for="endClockPos">Clock Position:</label>
-		  <input type="text" id="endClockPos" disabled>
+		  <input type="text" id="endClockPos" disabled pattern="^\d{2}:\d{2}$" placeholder="hh:mm">
 		</div>
 <div class="canvas-input-group">
   <label for="endEyeLevel">Eye Level (cm):</label>
@@ -354,10 +354,14 @@ function hideClickHint() {
     const stamp = yyyymmddhhss();
     return `${t}-${p}-${stamp}`;
   }
-  function isFilled(id) {
-    const el = document.getElementById(id);
-    return el && el.value != null && String(el.value).trim() !== '';
-  }
+function isFilled(id) {
+  const el = document.getElementById(id);
+  if (!el) return false;
+  const val = (el.value || '').trim();
+  if (val === '') return false;
+  if (id.includes('ClockPos') && !/^\d{2}:\d{2}$/.test(val)) return false;
+  return true;
+}
 
   const startSudsInput = document.getElementById('startSudsInput');
   const startDistanceInput = document.getElementById('startDistance');
@@ -652,6 +656,33 @@ canvas.addEventListener('click', function(e) {
   updateLog();
   updateFieldStates();
 });
+
+['startClockPos', 'endClockPos'].forEach(id => {
+  const el = document.getElementById(id);
+
+  // Force uppercase & validate
+  el.addEventListener('input', () => {
+    // Prevent any non-digit/non-colon chars
+    el.value = el.value.replace(/[^0-9:]/g, '');
+
+    // If user types more than 5 chars, trim
+    if (el.value.length > 5) el.value = el.value.slice(0,5);
+
+    // Auto-insert colon if user types 4 digits straight (e.g. "1234" → "12:34")
+    if (/^\d{4}$/.test(el.value)) {
+      el.value = el.value.slice(0,2) + ':' + el.value.slice(2);
+    }
+  });
+
+  el.addEventListener('blur', () => {
+    // Final validation on leaving field
+    if (!/^\d{2}:\d{2}$/.test(el.value)) {
+      alert('Clock position must be in the format 00:00 (hh:mm)');
+      el.value = '';  // clear invalid entry
+    }
+  });
+});
+
 
   function updateLog() {
     clickLog.innerHTML = '';

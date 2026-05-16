@@ -247,25 +247,33 @@
   // Parse a typed hh:mm value and move the corresponding marker to that clock position.
   // The marker keeps its current distance from centre; only the angle changes.
   function updateMarkerFromClockPos(index, timeStr){
-    let inp   = index === 0 ? startClockPos : endClockPos;
-    let match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    let str = timeStr.trim();
+
+    // Auto-format bare 3-4 digit numbers into hh:mm (e.g. "0100" -> "01:00", "700" -> "07:00")
+    if(/^\d{3,4}$/.test(str)){
+      str = str.padStart(4, '0');          // ensure 4 digits
+      str = str.slice(0, 2) + ':' + str.slice(2);
+    }
+
+    let match = str.match(/^(\d{1,2}):(\d{2})$/);
     if(!match){
       showPopup('Clock position must be in hh:mm format (e.g. 12:00 to 11:59).');
-      // Restore the field to the current marker position
       updateClockPosFromMarker(index);
       return;
     }
     let hour = parseInt(match[1]);
     let min  = parseInt(match[2]);
-    // Valid range: 12:00 to 11:59 (hours 1-12, minutes 0-59; 12 is valid, 0 is not)
     let valid = (hour >= 1 && hour <= 12) && (min >= 0 && min <= 59);
-    // Additionally disallow 12:00 being treated as invalid — it IS valid (top of clock)
     if(!valid){
       showPopup('Clock position must be between 12:00 and 11:59.');
       updateClockPosFromMarker(index);
       return;
     }
-    if(hour === 12) hour = 0; // 12 o'clock = 0 in mod arithmetic
+    // Update the field to show the formatted value
+    let inp = index === 0 ? startClockPos : endClockPos;
+    inp.value = str;
+
+    if(hour === 12) hour = 0;
     let totalMin  = hour * 60 + min;
     let angleDeg  = (totalMin / 720) * 360;
     let canvasAng = (angleDeg - 90 + 360) % 360;

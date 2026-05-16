@@ -247,19 +247,29 @@
   // Parse a typed hh:mm value and move the corresponding marker to that clock position.
   // The marker keeps its current distance from centre; only the angle changes.
   function updateMarkerFromClockPos(index, timeStr){
+    let inp   = index === 0 ? startClockPos : endClockPos;
     let match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-    if(!match) return;
+    if(!match){
+      showPopup('Clock position must be in hh:mm format (e.g. 12:00 to 11:59).');
+      // Restore the field to the current marker position
+      updateClockPosFromMarker(index);
+      return;
+    }
     let hour = parseInt(match[1]);
     let min  = parseInt(match[2]);
-    if(hour < 1 || hour > 12 || min < 0 || min > 59) return;
+    // Valid range: 12:00 to 11:59 (hours 1-12, minutes 0-59; 12 is valid, 0 is not)
+    let valid = (hour >= 1 && hour <= 12) && (min >= 0 && min <= 59);
+    // Additionally disallow 12:00 being treated as invalid — it IS valid (top of clock)
+    if(!valid){
+      showPopup('Clock position must be between 12:00 and 11:59.');
+      updateClockPosFromMarker(index);
+      return;
+    }
     if(hour === 12) hour = 0; // 12 o'clock = 0 in mod arithmetic
-    // Total minutes on a 12-hour clock face, then convert to angle (0° = 12 o'clock, clockwise)
     let totalMin  = hour * 60 + min;
-    let angleDeg  = (totalMin / 720) * 360; // 720 min = full circle
-    // Convert clock angle to canvas angle (clock 0° = canvas -90°)
+    let angleDeg  = (totalMin / 720) * 360;
     let canvasAng = (angleDeg - 90 + 360) % 360;
     let canvasRad = canvasAng * Math.PI / 180;
-    // Keep the marker at its current distance from centre, or use 75% radius if new
     let dist = clicks[index]
       ? Math.hypot(clicks[index].x - centerX, clicks[index].y - centerY)
       : radius * 0.75;

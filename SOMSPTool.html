@@ -7,220 +7,149 @@
 <style>
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background-color: #f5f5f5; font-size: 1rem; margin: 0; }
-
-  /* ── Top info fields ── */
-  .info-fields { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; max-width: 520px; width: 100%; }
-  .info-row { display: grid; gap: 15px; margin-bottom: 15px; }
-  .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
-  .info-row.row-4cols { grid-template-columns: 1.2fr 0.95fr 0.65fr 1fr; }
-  .info-fields label { font-size: 0.9rem; display: block; margin-bottom: 3px; }
-  .info-fields input, .info-fields select { width: 100%; padding: 5px; font-size: 0.85rem; text-transform: uppercase; }
-
-  /* ── Clock ── */
-  #clockContainer { position: relative; margin: 10px 20px 0; width: 100%; max-width: 500px; overflow: visible; }
+  #clockContainer { position: relative; margin: 20px; width: 100%; max-width: 500px; overflow: visible; }
   #clockCanvas { border: 1px solid #333; border-radius: 50%; background-color: #f9f9f9; display: block; width: 100%; height: auto; cursor: grab; }
   #clockCanvas:active { cursor: grabbing; }
-  .click-hint { background: #fff3cd; padding: 8px 12px; border-radius: 20px; text-align: center; margin: 8px 0 16px; max-width: 500px; width: 100%; }
-  .marker-label { position: absolute; font-weight: bold; background: rgba(255,255,255,0.85); padding: 2px 6px; border-radius: 4px; font-size: 13px; white-space: nowrap; transform: translateX(-50%); }
+  button { margin: 10px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  button:disabled { background-color: #ccc; }
+  .input-containers { display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; }
+  .canvas-input { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.3); width: 240px; margin-bottom: 10px; }
+  .canvas-input-title { font-weight: bold; text-align: center; margin-bottom: 10px; }
+  .distance-spread-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .distance-spread-row .canvas-input-group { flex: 1; }
+  .canvas-input-group { margin-bottom: 12px; }
+  .canvas-input-group label { font-size: 0.75rem; display: block; margin-bottom: 3px; }
+  .canvas-input label { font-size: 0.9rem; }
 
-  /* ── Two-column panel layout ── */
-  .panels-wrapper { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 520px; align-items: flex-start; }
-  .panel-column { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+  /* CHANGE 1: uppercase display on all text/number inputs */
+  input[type="text"],
+  input[type="number"] { text-transform: uppercase; }
 
-  /* ── Individual panel cards ── */
-  .canvas-input { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.3); width: 100%; }
-  .canvas-input-title { font-weight: bold; text-align: center; margin-bottom: 8px; font-size: 0.95rem; }
-  .canvas-input-group { margin-bottom: 10px; }
-  .canvas-input-group label { font-size: 0.72rem; display: block; margin-bottom: 3px; }
-  .canvas-input input, .canvas-input select { width: 100%; padding: 4px 5px; font-size: 0.72rem; }
-  .distance-spread-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .distance-spread-row .canvas-input-group { flex: 1; margin-bottom: 0; }
-  .eye-row { display: flex; gap: 6px; align-items: center; }
-
-  /* ── Clock position: display-only ── */
-  input.clock-display {
-    background: #f0f0f0;
-    color: #444;
-    cursor: default;
+  input, select {
+    width: 100%;
+    padding: 8px 6px;
+    font-size: 0.875rem;
+    min-height: 36px;
+    line-height: 1.4;
     border: 1px solid #ccc;
-    font-style: italic;
+    border-radius: 3px;
+    /* Prevent iOS from shrinking inputs */
+    -webkit-appearance: none;
+    appearance: none;
   }
-  input.clock-display:focus { outline: none; box-shadow: none; }
-
-  /* ── Bi-location checkbox ── */
-  .bilocation-row {
-    display: flex; align-items: center; gap: 8px;
-    margin-top: 10px; padding: 5px 6px;
-    background: #f0f4ff; border-radius: 4px; border: 1px solid #c5d0f0;
+  select { background: white; }
+  .info-fields { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; max-width: 520px; width: 100%; }
+  .info-row { display: grid; gap: 10px; margin-bottom: 12px; }
+  .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
+  .info-row.row-4cols { grid-template-columns: 1.2fr 0.95fr 0.65fr 1fr; }
+  @media (max-width: 520px) {
+    /* 3-col stays as-is — three equal columns fits fine on mobile */
+    .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
+    /* 4-col breaks into 2 rows of 2 on mobile */
+    .info-row.row-4cols { grid-template-columns: repeat(2,1fr); }
   }
-  .bilocation-row label { font-size: 0.78rem; font-weight: bold; color: #3a4a8a; cursor: pointer; margin: 0; }
-  .bilocation-row input[type=checkbox] { width: auto; cursor: pointer; accent-color: #3a4a8a; }
+  .info-fields label { font-size: 0.82rem; display: block; margin-bottom: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info-row > div { display: flex; flex-direction: column; justify-content: flex-end; }
+  .eye-row { display: flex; gap: 8px; align-items: center; }
 
-  /* ── Notes ── */
+  /* CHANGE 3: hint sits BELOW the clock */
+  .click-hint { background: #fff3cd; padding: 8px 12px; border-radius: 20px; text-align: center; margin-bottom: 10px; max-width: 500px; width: 100%; }
+
   .notes-container {
-    width: 100%; max-width: 520px; background: white; padding: 15px;
+    width: 100%; max-width: 490px; background: white; padding: 15px;
     border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1);
     margin-top: 20px; margin-bottom: 20px;
   }
   .notes-container label { font-weight: bold; display: block; margin-bottom: 8px; }
   .notes-container textarea { width: 100%; min-height: 120px; resize: vertical; font-size: 0.875rem; padding: 8px; }
+  .word-counter { text-align: right; font-size: 0.75rem; color: #666; margin-top: 5px; }
+  .word-counter.warning { color: #d9534f; font-weight: bold; }
 
-  /* ── Dismissable popup ── */
+  /* CHANGE 4: dismissible popup */
   #popupOverlay {
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.45);
-    display: none; align-items: center; justify-content: center; z-index: 10000;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 10000;
   }
   #popupOverlay.active { display: flex; }
   #popupBox {
-    background: white; border-radius: 10px; max-width: 420px; width: 90%;
-    padding: 24px 20px 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    background: white; border-radius: 12px; max-width: 420px;
+    width: 90%; padding: 28px 24px 20px; text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   }
-  #popupBox h3 { margin: 0 0 12px; font-size: 1rem; color: #c0392b; }
-  #popupList { margin: 0 0 16px; padding-left: 18px; font-size: 0.88rem; line-height: 1.6; color: #333; }
+  #popupMsg { font-size: 1rem; color: #333; margin-bottom: 20px; line-height: 1.5; }
   #popupClose {
-    display: block; margin: 0 auto; padding: 7px 24px;
-    background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;
+    background: #4CAF50; color: white; border: none; border-radius: 6px;
+    padding: 8px 28px; font-size: 0.95rem; cursor: pointer; margin: 0;
   }
+  #popupClose:hover { background: #3e8e41; }
 
-  button { margin: 10px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  button:disabled { background-color: #ccc; cursor: default; }
-
-  @media (max-width: 480px) {
-    .panels-wrapper { flex-direction: column; }
-    .info-row.row-4cols { grid-template-columns: 1fr 1fr; }
+  .marker-label {
+    position: absolute; font-weight: bold; background: transparent;
+    padding: 2px 6px; border-radius: 4px; font-size: 14px;
+    white-space: nowrap; transform: translateX(-50%);
   }
-  .logo-container { text-align: center; margin-bottom: 16px; }
-.logo-container img { max-width: 440px; width: 100%; height: auto; }
 </style>
 </head>
 <body>
-   <div class="logo-container">
-        <img src="data:image/png;base64,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" alt="Society for Mental Space Psychology Logo">
-    </div>
 
-<!-- Top info fields -->
 <div class="info-fields">
   <div class="info-row row-3cols">
-    <div><label>Administrator Code</label><input type="text" id="therapistNumber" autocomplete="off"></div>
-    <div><label>Participant Code</label><input type="text" id="participantNumber" autocomplete="off"></div>
-    <div><label>Name for Emotion *</label><input type="text" id="issueName" autocomplete="off"></div>
+    <div><label>Admin Code</label><input type="text" id="therapistNumber"></div>
+    <div><label>Participant Code</label><input type="text" id="participantNumber"></div>
+    <div><label>Emotion Name *</label><input type="text" id="issueName"></div>
   </div>
   <div class="info-row row-4cols">
-    <div><label>Therapy Modality</label><input type="text" id="modality" autocomplete="off"></div>
-    <div><label>Session Type</label>
-      <select id="sessionType">
-        <option value="">Select...</option>
-        <option>ONLINE</option>
-        <option>IN-PERSON</option>
-      </select>
-    </div>
-    <div><label>Hours Used</label><input type="number" id="hours" step="any" min="0.01"></div>
-    <div><label>End Date</label><input type="text" id="sessionDate" autocomplete="off"></div>
+    <div><label>Therapy Modality</label><input type="text" id="modality"></div>
+    <div><label>Session Type</label><select id="sessionType"><option value="">Select...</option><option value="ONLINE">ONLINE</option><option value="IN-PERSON">IN-PERSON</option></select></div>
+    <div><label>Hours Used</label><input type="text" id="hours" inputmode="decimal"></div>
+    <div><label>End Date</label><input type="text" id="sessionDate"></div>
   </div>
 </div>
 
-<!-- Clock (hint moves below) -->
+<!-- CHANGE 3: clock first, hint below -->
 <div id="clockContainer">
   <canvas id="clockCanvas" width="500" height="500"></canvas>
 </div>
 <div id="dynamicHint" class="click-hint"></div>
 
-<!-- Two-column panel layout -->
-<div class="panels-wrapper">
-
-  <!-- LEFT COLUMN: Before + Before-BL -->
-  <div class="panel-column">
-
-    <!-- BEFORE -->
-    <div class="canvas-input" id="panel-before">
-      <div class="canvas-input-title" style="color:#FF5733;">BEFORE</div>
-      <!-- 1) Feeling Level at top -->
-      <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="startSuds" min="1" max="10" disabled></div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="startClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="startDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="startSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="startEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="startEyeLevel" min="0" disabled>
-        </div>
-      </div>
-      <div class="bilocation-row">
-        <input type="checkbox" id="blBeforeCheck">
-        <label for="blBeforeCheck">Bi-location</label>
+<div class="input-containers">
+  <div class="canvas-input">
+    <div class="canvas-input-title">BEFORE</div>
+    <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="startSuds" min="1" max="10" disabled></div>
+    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="startClockPos" disabled placeholder="hh:mm"></div>
+    <div class="distance-spread-row">
+      <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="startDistance" min="0" disabled></div>
+      <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="startSpread" min="0" max="360" step="1" disabled></div>
+    </div>
+    <div><label>Eye Level (cm):</label>
+      <div class="eye-row">
+        <select id="startEyePos" disabled><option value="ABOVE">ABOVE</option><option value="LEVEL" selected>LEVEL</option><option value="BELOW">BELOW</option></select>
+        <input type="number" id="startEyeLevel" min="0" disabled>
       </div>
     </div>
-
-    <!-- BEFORE-BL (no Feeling Level) -->
-    <div class="canvas-input" id="panel-before-bl" style="display:none;">
-      <div class="canvas-input-title" style="color:#0055cc;">BEFORE-BL</div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="blStartClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="blStartDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="blStartSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="blStartEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="blStartEyeLevel" min="0" disabled>
-        </div>
+  </div>
+  <div class="canvas-input">
+    <div class="canvas-input-title">AFTER</div>
+    <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="endSuds" min="1" max="10" disabled></div>
+    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="endClockPos" disabled placeholder="hh:mm"></div>
+    <div class="distance-spread-row">
+      <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="endDistance" min="0" disabled></div>
+      <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="endSpread" min="0" max="360" step="1" disabled></div>
+    </div>
+    <div><label>Eye Level (cm):</label>
+      <div class="eye-row">
+        <select id="endEyePos" disabled><option value="ABOVE">ABOVE</option><option value="LEVEL" selected>LEVEL</option><option value="BELOW">BELOW</option></select>
+        <input type="number" id="endEyeLevel" min="0" disabled>
       </div>
     </div>
-
-  </div><!-- /left column -->
-
-  <!-- RIGHT COLUMN: After + After-BL -->
-  <div class="panel-column">
-
-    <!-- AFTER -->
-    <div class="canvas-input" id="panel-after">
-      <div class="canvas-input-title" style="color:#33AA33;">AFTER</div>
-      <!-- 1) Feeling Level at top -->
-      <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="endSuds" min="1" max="10" disabled></div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="endClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="endDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="endSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="endEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="endEyeLevel" min="0" disabled>
-        </div>
-      </div>
-      <div class="bilocation-row">
-        <input type="checkbox" id="blAfterCheck">
-        <label for="blAfterCheck">Bi-location</label>
-      </div>
-    </div>
-
-    <!-- AFTER-BL (no Feeling Level) -->
-    <div class="canvas-input" id="panel-after-bl" style="display:none;">
-      <div class="canvas-input-title" style="color:#9900cc;">AFTER-BL</div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="blEndClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="blEndDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="blEndSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="blEndEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="blEndEyeLevel" min="0" disabled>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /right column -->
-
-</div><!-- /panels-wrapper -->
+  </div>
+</div>
 
 <div class="notes-container">
   <label>📝 Notes (optional, up to 500 words)</label>
   <textarea id="notes" rows="4"></textarea>
-  <div id="wordCounter" style="text-align:right; font-size:0.75rem;">0 / 500 words</div>
+  <div id="wordCounter" class="word-counter">0 / 500 words</div>
 </div>
 
 <div style="display:flex; justify-content:center;">
@@ -228,11 +157,10 @@
   <button id="resetBtn">Reset</button>
 </div>
 
-<!-- Dismissable popup -->
+<!-- CHANGE 4: single dismissible popup for all errors -->
 <div id="popupOverlay">
   <div id="popupBox">
-    <h3>⚠️ Please fix the following:</h3>
-    <ul id="popupList"></ul>
+    <div id="popupMsg"></div>
     <button id="popupClose">OK</button>
   </div>
 </div>
@@ -241,491 +169,699 @@
 <script>
 (function(){
 
-  // ── Canvas ────────────────────────────────────────────────────
-  const canvas = document.getElementById('clockCanvas');
-  const ctx    = canvas.getContext('2d');
-  const CX = 250, CY = 250, R = 200;
-
-  // 0=Before  1=After  2=Before-BL  3=After-BL
-  const COLORS = ['#FF5733','#33AA33','#0055cc','#9900cc'];
-  const LABELS = ['Before','After','Before-BL','After-BL'];
-
-  let markers    = [null,null,null,null];
-  let blBeforeOn = false, blAfterOn = false;
-  let isDragging = false, dragIdx = null;
-
-  const $ = id => document.getElementById(id);
-
-  // ── Panel field groups (indexed 0-3) ──────────────────────────
-  // BL panels (2,3) have no suds field — null
-  const PANEL = [
-    { suds:$('startSuds'),  clock:$('startClockPos'), dist:$('startDistance'),
-      spread:$('startSpread'), eyePos:$('startEyePos'), eyeLvl:$('startEyeLevel') },
-    { suds:$('endSuds'),    clock:$('endClockPos'),   dist:$('endDistance'),
-      spread:$('endSpread'),   eyePos:$('endEyePos'),  eyeLvl:$('endEyeLevel') },
-    { suds:null, clock:$('blStartClockPos'), dist:$('blStartDistance'),
-      spread:$('blStartSpread'), eyePos:$('blStartEyePos'), eyeLvl:$('blStartEyeLevel') },
-    { suds:null, clock:$('blEndClockPos'),   dist:$('blEndDistance'),
-      spread:$('blEndSpread'),   eyePos:$('blEndEyePos'),   eyeLvl:$('blEndEyeLevel') }
-  ];
-
-  const hoursInput  = $('hours');
-  const downloadBtn = $('downloadBtn');
-  const dynamicHint = $('dynamicHint');
-  const notesTA     = $('notes');
-  const blBeforeChk = $('blBeforeCheck');
-  const blAfterChk  = $('blAfterCheck');
-
-  // ── Popup ─────────────────────────────────────────────────────
-  const popupOverlay = $('popupOverlay');
-  const popupList    = $('popupList');
-  $('popupClose').addEventListener('click', () => popupOverlay.classList.remove('active'));
-  popupOverlay.addEventListener('click', e => { if(e.target===popupOverlay) popupOverlay.classList.remove('active'); });
-
-  function showPopup(errors){
-    popupList.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+  // ── CHANGE 4: popup helper replaces all alert() calls ─────────────────────
+  const popupOverlay = document.getElementById('popupOverlay');
+  const popupMsg     = document.getElementById('popupMsg');
+  document.getElementById('popupClose').addEventListener('click', function(){
+    popupOverlay.classList.remove('active');
+  });
+  function showPopup(msg){
+    popupMsg.textContent = msg;
     popupOverlay.classList.add('active');
   }
 
-  // ── Uppercase enforcement for top text inputs ─────────────────
-  ['therapistNumber','participantNumber','issueName','modality','sessionDate'].forEach(id => {
-    $(id).addEventListener('input', function(){ this.value = this.value.toUpperCase(); });
+  // ── Canvas setup ──────────────────────────────────────────────────────────
+  const canvas  = document.getElementById('clockCanvas');
+  const ctx     = canvas.getContext('2d');
+  const centerX = 250, centerY = 250, radius = 200;
+  let clicks = [];
+  let startSudsVal = null, endSudsVal = null;
+  let isDragging = false, dragIndex = null;
+
+  // ── Input references ───────────────────────────────────────────────────────
+  const startSpreadInput = document.getElementById('startSpread');
+  const endSpreadInput   = document.getElementById('endSpread');
+  const startSudsInput   = document.getElementById('startSuds');
+  const endSudsInput     = document.getElementById('endSuds');
+  const startDistance    = document.getElementById('startDistance');
+  const endDistance      = document.getElementById('endDistance');
+  const startEyeLevel    = document.getElementById('startEyeLevel');
+  const endEyeLevel      = document.getElementById('endEyeLevel');
+  const startEyePos      = document.getElementById('startEyePos');
+  const endEyePos        = document.getElementById('endEyePos');
+  const startClockPos    = document.getElementById('startClockPos');
+  const endClockPos      = document.getElementById('endClockPos');
+  const hoursInput       = document.getElementById('hours');
+  const downloadBtn      = document.getElementById('downloadBtn');
+  const dynamicHint      = document.getElementById('dynamicHint');
+  const notesTextarea    = document.getElementById('notes');
+
+  // ── CHANGE 1: uppercase enforcement on all text inputs ────────────────────
+  document.querySelectorAll('input[type="text"]').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      // Clock position fields use hh:mm format — skip uppercase for them
+      if(this.id === 'startClockPos' || this.id === 'endClockPos') return;
+      var pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
   });
 
-  // ── Floating marker labels ────────────────────────────────────
-  const floatLabels = LABELS.map((txt,i) => {
-    const d = document.createElement('div');
-    d.className = 'marker-label';
-    d.style.color = COLORS[i];
-    d.style.display = 'none';
-    $('clockContainer').appendChild(d);
-    return d;
+  // ── CHANGE 2: block negative values on all numeric inputs ─────────────────
+  document.querySelectorAll('input[type="number"]').forEach(function(inp){
+    inp.addEventListener('keydown', function(e){
+      if(e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+    });
+    inp.addEventListener('input', function(){
+      if(this.value !== '' && parseFloat(this.value) < 0) this.value = '';
+    });
   });
 
-  // ── Geometry helpers ──────────────────────────────────────────
-  function getAngleDeg(x,y){
-    return ((Math.atan2(y-CY, x-CX) * 180/Math.PI + 360) % 360 + 90) % 360;
+  // ── Geometry ───────────────────────────────────────────────────────────────
+  function getAngleFromXY(x, y){
+    let deg = (Math.atan2(y - centerY, x - centerX) * 180 / Math.PI + 360) % 360;
+    return (deg + 90) % 360; // 0° = 12 o'clock, clockwise
   }
-  function angleToTime(deg){
-    let mins = Math.round((deg/360)*720/5)*5;
-    if(mins >= 720) mins = 0;
-    let h = Math.floor(mins/60) || 12, m = mins%60;
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+
+  function updateClockPosFromMarker(index){
+    if(!clicks[index]) return;
+    let totalMin = Math.round(clicks[index].angleDeg / 360 * 720 / 5) * 5;
+    if(totalMin >= 720) totalMin = 0;
+    let hour = Math.floor(totalMin / 60) || 12;
+    let min  = totalMin % 60;
+    let str  = `${hour.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+    if(index === 0) startClockPos.value = str;
+    else            endClockPos.value   = str;
   }
-  function validPos(x,y,excl){
-    let d = Math.hypot(x-CX, y-CY);
-    if(d > R || d < 40) return false;
-    for(let i=0;i<4;i++){
-      if(i===excl || !markers[i]) continue;
-      if(Math.hypot(x-markers[i].x, y-markers[i].y) < 15) return false;
+
+  // Parse a typed hh:mm value and move the corresponding marker to that clock position.
+  // The marker keeps its current distance from centre; only the angle changes.
+  function updateMarkerFromClockPos(index, timeStr){
+    let match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if(!match) return;
+    let hour = parseInt(match[1]);
+    let min  = parseInt(match[2]);
+    if(hour < 1 || hour > 12 || min < 0 || min > 59) return;
+    if(hour === 12) hour = 0; // 12 o'clock = 0 in mod arithmetic
+    // Total minutes on a 12-hour clock face, then convert to angle (0° = 12 o'clock, clockwise)
+    let totalMin  = hour * 60 + min;
+    let angleDeg  = (totalMin / 720) * 360; // 720 min = full circle
+    // Convert clock angle to canvas angle (clock 0° = canvas -90°)
+    let canvasAng = (angleDeg - 90 + 360) % 360;
+    let canvasRad = canvasAng * Math.PI / 180;
+    // Keep the marker at its current distance from centre, or use 75% radius if new
+    let dist = clicks[index]
+      ? Math.hypot(clicks[index].x - centerX, clicks[index].y - centerY)
+      : radius * 0.75;
+    let newX = centerX + Math.cos(canvasRad) * dist;
+    let newY = centerY + Math.sin(canvasRad) * dist;
+    clicks[index] = { x: newX, y: newY, angleDeg: angleDeg };
+    drawClock();
+    updateFieldStates();
+  }
+
+  // ── Spread wedge ──────────────────────────────────────────────────────────
+  // For each ray direction, compute the exact distance from the marker (mx,my)
+  // to the clock face circle boundary and draw the fan out to that edge.
+  function rayToCircleEdge(mx, my, ang){
+    // Ray: P = (mx,my) + t*(cos(ang),sin(ang))
+    // Circle: (P.x - cx)^2 + (P.y - cy)^2 = r^2
+    // Solve quadratic: t^2 + 2*(dx*cos+dy*sin)*t + (dx^2+dy^2-r^2) = 0
+    let dx = mx - centerX, dy = my - centerY;
+    let cosA = Math.cos(ang), sinA = Math.sin(ang);
+    let b = dx * cosA + dy * sinA;          // half of linear term
+    let c = dx * dx + dy * dy - radius * radius;
+    let disc = b * b - c;
+    if(disc < 0) return 0;
+    let t = -b + Math.sqrt(disc);           // positive root = forward intersection
+    return Math.max(0, t);
+  }
+
+  function drawSpreadArcFromMarker(mx, my, angleDeg, spreadDeg, color){
+    if(spreadDeg <= 0) return;
+    let dx           = mx - centerX, dy = my - centerY;
+    let outwardAngle = Math.atan2(dy, dx);
+    let halfSpread   = (spreadDeg * Math.PI / 180) / 2;
+    let startAng     = outwardAngle - halfSpread;
+    let endAng       = outwardAngle + halfSpread;
+    let steps        = Math.max(16, Math.floor(spreadDeg / 5));
+
+    // filled wedge
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.moveTo(mx, my);
+    for(let i = 0; i <= steps; i++){
+      let ang = startAng + (i / steps) * (endAng - startAng);
+      let t   = rayToCircleEdge(mx, my, ang);
+      ctx.lineTo(mx + Math.cos(ang) * t, my + Math.sin(ang) * t);
     }
-    return true;
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+
+    // double-sided arc arrow at 2/3 along the centre ray
+    let midT = rayToCircleEdge(mx, my, outwardAngle);
+    let arcR = midT * (2 / 3);
+    if(arcR < 6) return;
+
+    ctx.save();
+    ctx.globalAlpha = 1.0;
+    ctx.strokeStyle = color;
+    ctx.fillStyle   = color;
+    ctx.lineWidth   = 2;
+
+    ctx.beginPath();
+    ctx.arc(mx, my, arcR, startAng, endAng);
+    ctx.stroke();
+
+    // Arrowhead: tip points OUTWARD (away from wedge centre).
+    // tipAng = angle on arc where the arrowhead sits.
+    // The tangent at tipAng is perpendicular to the radius: tanAng = tipAng ± PI/2.
+    // "Outward" means away from outwardAngle, so:
+    //   at startAng the outward tangent points in the -PI/2 direction (decreasing angle)
+    //   at endAng   the outward tangent points in the +PI/2 direction (increasing angle)
+    // Wings sit INSIDE the wedge (back along the arc toward outwardAngle).
+    function arrowHead(tipAng, outwardTanAng){
+      let headLen = Math.min(10, arcR * 0.35);
+      let tipX = mx + Math.cos(tipAng) * arcR;
+      let tipY = my + Math.sin(tipAng) * arcR;
+      let wingAng = Math.PI / 7;
+      // Wings go in the opposite direction to the tip (inward, toward wedge centre)
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI - wingAng) * headLen,
+                 tipY + Math.sin(outwardTanAng + Math.PI - wingAng) * headLen);
+      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI + wingAng) * headLen,
+                 tipY + Math.sin(outwardTanAng + Math.PI + wingAng) * headLen);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // At startAng: outward tangent is in the -PI/2 direction (decreasing angle = away from wedge)
+    arrowHead(startAng, startAng - Math.PI / 2);
+    // At endAng: outward tangent is in the +PI/2 direction (increasing angle = away from wedge)
+    arrowHead(endAng,   endAng   + Math.PI / 2);
+
+    ctx.restore();
   }
-  function markerAt(cx,cy){
+
+  // ── Draw ──────────────────────────────────────────────────────────────────
+  function drawClock(){
+    ctx.clearRect(0, 0, 500, 500);
+
+    // Face
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
+
+    // Hour positions
+    ctx.font = 'bold 16px Arial'; ctx.fillStyle = '#333';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for(let i = 1; i <= 12; i++){
+      let angle = (i - 3) * Math.PI / 6;
+      let x = centerX + Math.cos(angle) * (radius * 0.8);
+      let y = centerY + Math.sin(angle) * (radius * 0.8);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillText(i.toString(),
+        centerX + Math.cos(angle) * (radius * 0.92),
+        centerY + Math.sin(angle) * (radius * 0.92));
+    }
+
+    // Centre dot — drawn before markers so markers always appear on top
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = 'magenta'; ctx.fill();
+
+    // Spread wedges — also drawn before markers
+    if(clicks[0] && !startSpreadInput.disabled){
+      let s = parseFloat(startSpreadInput.value);
+      if(!isNaN(s) && s > 0)
+        drawSpreadArcFromMarker(clicks[0].x, clicks[0].y, clicks[0].angleDeg, s, '#FF5733');
+    }
+    if(clicks[1] && !endSpreadInput.disabled){
+      let s = parseFloat(endSpreadInput.value);
+      if(!isNaN(s) && s > 0)
+        drawSpreadArcFromMarker(clicks[1].x, clicks[1].y, clicks[1].angleDeg, s, '#33FF57');
+    }
+
+    // Distance lines — drawn before markers so dots sit on top
+    for(let i = 0; i < clicks.length; i++){
+      let c        = clicks[i];
+      let distInp  = i === 0 ? startDistance : endDistance;
+      let color    = i === 0 ? '#FF5733' : '#33FF57';
+      let distVal  = parseFloat(distInp.value);
+      let distFromCentre = Math.hypot(c.x - centerX, c.y - centerY);
+
+      // Only draw when a distance has been entered and marker isn't on the centre dot
+      if(!isNaN(distVal) && distVal > 0 && distFromCentre > 20){
+        let outAng = Math.atan2(c.y - centerY, c.x - centerX);
+
+        // Dotted line from edge of centre dot (r=20) to edge of marker dot (r=10)
+        let lineStartX = centerX + Math.cos(outAng) * 20;
+        let lineStartY = centerY + Math.sin(outAng) * 20;
+        let lineEndX   = c.x - Math.cos(outAng) * 10;
+        let lineEndY   = c.y - Math.sin(outAng) * 10;
+
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = color;
+        ctx.lineWidth   = 1.5;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(lineStartX, lineStartY);
+        ctx.lineTo(lineEndX, lineEndY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Distance label at midpoint of the line, offset perpendicular so it
+        // doesn't sit directly on the line
+        let midX    = (lineStartX + lineEndX) / 2;
+        let midY    = (lineStartY + lineEndY) / 2;
+        // Perpendicular offset (rotate outAng by 90°)
+        let perpX   = midX - Math.sin(outAng) * 12;
+        let perpY   = midY + Math.cos(outAng) * 12;
+        let label   = distVal + 'm';
+
+        ctx.save();
+        ctx.font         = 'bold 11px Arial';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        // White halo for legibility
+        ctx.strokeStyle  = '#fff';
+        ctx.lineWidth    = 3;
+        ctx.strokeText(label, perpX, perpY);
+        ctx.fillStyle    = color;
+        ctx.fillText(label, perpX, perpY);
+        ctx.restore();
+      }
+    }
+
+    // Markers drawn last so they always appear on top of everything.
+    // No exclusion zones — markers may overlap each other and the centre dot.
+    for(let i = 0; i < clicks.length; i++){
+      let c     = clicks[i];
+      let color = i === 0 ? '#FF5733' : '#33FF57';
+
+      // Dot
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 10, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      // Outward-pointing chevron: direction from centre through the marker
+      let outAng  = Math.atan2(c.y - centerY, c.x - centerX);
+      let dotR    = 10;          // marker radius
+      let chevLen = 9;           // length of each chevron arm
+      let chevGap = 4;           // how far the chevron tip sits beyond the dot edge
+      let tipX    = c.x + Math.cos(outAng) * (dotR + chevGap + chevLen * 0.45);
+      let tipY    = c.y + Math.sin(outAng) * (dotR + chevGap + chevLen * 0.45);
+      // Wings spread ±35° back from the tip
+      let wingAng = Math.PI / 5;
+      let w1x = tipX - Math.cos(outAng - wingAng) * chevLen;
+      let w1y = tipY - Math.sin(outAng - wingAng) * chevLen;
+      let w2x = tipX - Math.cos(outAng + wingAng) * chevLen;
+      let w2y = tipY - Math.sin(outAng + wingAng) * chevLen;
+
+      ctx.save();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 2.5;
+      ctx.lineJoin    = 'round';
+      ctx.lineCap     = 'round';
+      ctx.beginPath();
+      ctx.moveTo(w1x, w1y);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(w2x, w2y);
+      ctx.stroke();
+      // Draw again in black on top
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(w1x, w1y);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(w2x, w2y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    updateLabelPositions();
+  }
+
+  // ── Floating labels ────────────────────────────────────────────────────────
+  const labelStart = document.createElement('div');
+  const labelEnd   = document.createElement('div');
+  [labelStart, labelEnd].forEach(function(l){
+    l.className = 'marker-label'; l.style.display = 'none';
+    document.getElementById('clockContainer').appendChild(l);
+  });
+
+  function updateLabelPositions(){
+    const cRect = document.getElementById('clockContainer').getBoundingClientRect();
+    const kRect = canvas.getBoundingClientRect();
+    const ox = kRect.left - cRect.left, oy = kRect.top - cRect.top;
+    const sx = canvas.clientWidth / canvas.width, sy = canvas.clientHeight / canvas.height;
+
+    if(clicks[0]){
+      labelStart.textContent = 'Before'; labelStart.style.color = '#FF5733';
+      labelStart.style.left = (ox + clicks[0].x * sx) + 'px';
+      labelStart.style.top  = (oy + clicks[0].y * sy + 20) + 'px';
+      labelStart.style.display = 'block';
+    } else { labelStart.style.display = 'none'; }
+
+    if(clicks[1]){
+      labelEnd.textContent = 'After'; labelEnd.style.color = '#33FF57';
+      labelEnd.style.left = (ox + clicks[1].x * sx) + 'px';
+      labelEnd.style.top  = (oy + clicks[1].y * sy + 20) + 'px';
+      labelEnd.style.display = 'block';
+    } else { labelEnd.style.display = 'none'; }
+  }
+  window.addEventListener('resize', updateLabelPositions);
+
+  // ── Marker helpers ─────────────────────────────────────────────────────────
+  function addMarker(x, y, index){
+    clicks[index] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    updateClockPosFromMarker(index);
+    drawClock();
+    updateFieldStates();
+  }
+
+  // CHANGE 5: only boundary check — inside the clock face circle.
+  // No minimum distance from centre, no exclusion around other markers.
+  function isInsideClockFace(x, y){
+    return Math.hypot(x - centerX, y - centerY) <= radius;
+  }
+
+  // Hit-test iterates in reverse so topmost (last-drawn) marker is picked first.
+  // Hit radius 26px canvas units to accommodate fat fingers on mobile.
+  function getMarkerIndexAt(clientX, clientY){
     const rect = canvas.getBoundingClientRect();
-    const px = (cx-rect.left)*(canvas.width/rect.width);
-    const py = (cy-rect.top)*(canvas.height/rect.height);
-    for(let i=3;i>=0;i--){
-      if(markers[i] && Math.hypot(px-markers[i].x, py-markers[i].y) <= 12) return i;
+    const cx = (clientX - rect.left) * (canvas.width  / rect.width);
+    const cy = (clientY - rect.top)  * (canvas.height / rect.height);
+    for(let i = clicks.length - 1; i >= 0; i--){
+      if(clicks[i] && Math.hypot(cx - clicks[i].x, cy - clicks[i].y) <= 26) return i;
     }
     return -1;
   }
 
-  // ── Drawing ───────────────────────────────────────────────────
-  function drawWedge(mx,my,spreadDeg,color){
-    if(spreadDeg <= 0) return;
-    let dx=mx-CX, dy=my-CY;
-    let out = Math.atan2(dy,dx);
-    let half = (spreadDeg*Math.PI/180)/2;
-    let len = Math.min(70, Math.max(30, (R-Math.hypot(dx,dy))*0.8));
-    let steps = Math.max(8, Math.floor(spreadDeg/10));
-    ctx.save();
-    ctx.globalAlpha = 0.4;
-    ctx.beginPath(); ctx.moveTo(mx,my);
-    for(let i=0;i<=steps;i++){
-      let a = out - half + i/steps*(2*half);
-      ctx.lineTo(mx+Math.cos(a)*len, my+Math.sin(a)*len);
-    }
-    ctx.closePath();
-    ctx.fillStyle = color; ctx.fill();
-    ctx.globalAlpha = 0.8; ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
-    ctx.restore();
+  function getCanvasXY(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (canvas.width  / rect.width),
+      y: (clientY - rect.top)  * (canvas.height / rect.height)
+    };
   }
 
-  function drawClock(){
-    ctx.clearRect(0,0,500,500);
-    ctx.beginPath(); ctx.arc(CX,CY,R,0,2*Math.PI);
-    ctx.strokeStyle='#333'; ctx.lineWidth=3; ctx.stroke();
-    ctx.font='bold 16px Arial'; ctx.fillStyle='#333';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(let i=1;i<=12;i++){
-      let a=(i-3)*Math.PI/6;
-      let x=CX+Math.cos(a)*R*0.8, y=CY+Math.sin(a)*R*0.8;
-      ctx.beginPath(); ctx.arc(x,y,3,0,2*Math.PI); ctx.fill();
-      ctx.fillText(i, CX+Math.cos(a)*R*0.92, CY+Math.sin(a)*R*0.92);
-    }
-    ctx.beginPath(); ctx.arc(CX,CY,20,0,2*Math.PI); ctx.fillStyle='magenta'; ctx.fill();
-    for(let i=0;i<4;i++){
-      if(!markers[i] || PANEL[i].spread.disabled) continue;
-      let s = parseFloat(PANEL[i].spread.value);
-      if(!isNaN(s) && s>0) drawWedge(markers[i].x, markers[i].y, s, COLORS[i]);
-    }
-    for(let i=0;i<4;i++){
-      if(!markers[i]) continue;
-      ctx.beginPath(); ctx.arc(markers[i].x, markers[i].y, 10, 0, 2*Math.PI);
-      ctx.fillStyle=COLORS[i]; ctx.fill();
-      ctx.strokeStyle='#333'; ctx.lineWidth=1.5; ctx.stroke();
-    }
-    updateFloats();
-  }
-
-  function updateFloats(){
-    const cr = $('clockContainer').getBoundingClientRect();
-    const cv = canvas.getBoundingClientRect();
-    const ox=cv.left-cr.left, oy=cv.top-cr.top;
-    const sx=canvas.clientWidth/canvas.width, sy=canvas.clientHeight/canvas.height;
-    for(let i=0;i<4;i++){
-      if(markers[i]){
-        floatLabels[i].textContent = LABELS[i];
-        floatLabels[i].style.left  = (ox+markers[i].x*sx)+'px';
-        floatLabels[i].style.top   = (oy+markers[i].y*sy+20)+'px';
-        floatLabels[i].style.display = 'block';
-      } else { floatLabels[i].style.display = 'none'; }
-    }
-  }
-  window.addEventListener('resize', updateFloats);
-
-  // ── Validation ────────────────────────────────────────────────
-  function topOK(){
-    return $('therapistNumber').value.trim() &&
-           $('participantNumber').value.trim() &&
-           $('issueName').value.trim() &&
-           $('modality').value.trim() &&
-           $('sessionType').value &&
-           parseFloat(hoursInput.value) > 0 &&
-           $('sessionDate').value.trim();
-  }
-
-  function panelOK(idx){
-    let p = PANEL[idx];
-    if(!markers[idx]) return false;
-    if(p.suds){ // only primary panels have SUDS
-      let s = parseInt(p.suds.value);
-      if(isNaN(s)||s<1||s>10) return false;
-    }
-    if(!p.dist.value.trim() || parseFloat(p.dist.value)<0) return false;
-    let sp = parseFloat(p.spread.value);
-    if(isNaN(sp)||sp<0||sp>360) return false;
-    if(p.eyePos.value!=='Level' && (!p.eyeLvl.value.trim()||parseFloat(p.eyeLvl.value)<0)) return false;
-    return true;
-  }
-
-  function collectErrors(){
-    let errs = [];
-    if(!$('therapistNumber').value.trim()) errs.push('Administrator Code is required');
-    if(!$('participantNumber').value.trim()) errs.push('Participant Code is required');
-    if(!$('issueName').value.trim()) errs.push('Name for Emotion is required');
-    if(!$('modality').value.trim()) errs.push('Therapy Modality is required');
-    if(!$('sessionType').value) errs.push('Session Type must be selected');
-    let hrs = parseFloat(hoursInput.value);
-    if(isNaN(hrs)||hrs<=0) errs.push('Hours Used must be a positive number');
-    if(!$('sessionDate').value.trim()) errs.push('End Date is required');
-    if(!markers[0]) errs.push('BEFORE marker not placed on clock');
-    else if(!panelOK(0)) errs.push('BEFORE panel: check Feeling Level (1-10), Distance, Spread, and Eye Level');
-    if(blBeforeOn){
-      if(!markers[2]) errs.push('BEFORE-BL marker not placed on clock');
-      else if(!panelOK(2)) errs.push('BEFORE-BL panel: check Distance, Spread, and Eye Level');
-    }
-    if(!markers[1]) errs.push('AFTER marker not placed on clock');
-    else if(!panelOK(1)) errs.push('AFTER panel: check Feeling Level (1-10), Distance, Spread, and Eye Level');
-    if(blAfterOn){
-      if(!markers[3]) errs.push('AFTER-BL marker not placed on clock');
-      else if(!panelOK(3)) errs.push('AFTER-BL panel: check Distance, Spread, and Eye Level');
-    }
-    return errs;
-  }
-
-  // ── Enable/disable panels ─────────────────────────────────────
-  function enablePanel(idx, on){
-    let p = PANEL[idx];
-    if(p.suds) p.suds.disabled = !on;
-    p.dist.disabled = !on; p.spread.disabled = !on;
-    p.eyePos.disabled = !on;
-    p.eyeLvl.disabled = !on || (p.eyePos.value==='Level');
-    // clock is always readonly — value set only by clock face, never disabled
-  }
-
-  function updateFieldStates(){
-    for(let i=0;i<4;i++) enablePanel(i, !!markers[i]);
-    let ready = topOK() && panelOK(0) && panelOK(1);
-    if(blBeforeOn) ready = ready && panelOK(2);
-    if(blAfterOn)  ready = ready && panelOK(3);
-    downloadBtn.disabled = !ready;
-    updateHint();
-  }
-
-  // ── Placement sequence: 0 → (2 if blBefore) → 1 → (3 if blAfter) ──
-  function nextSlot(){
-    if(!markers[0]) return 0;
-    if(blBeforeOn && !markers[2] && panelOK(0)) return 2;
-    if(!markers[1]){
-      if(!panelOK(0)) return null;
-      if(blBeforeOn && !panelOK(2)) return null;
-      return 1;
-    }
-    if(blAfterOn && !markers[3] && panelOK(1)) return 3;
-    return null;
-  }
-
-  function placeMarker(x,y,idx){
-    markers[idx] = {x, y, angleDeg: getAngleDeg(x,y)};
-    PANEL[idx].clock.value = angleToTime(markers[idx].angleDeg);
-    drawClock();
-    updateFieldStates();
-  }
-
-  // ── Mouse handlers ────────────────────────────────────────────
+  // ── Drag — mouse ─────────────────────────────────────────────────────────
   canvas.addEventListener('mousedown', function(e){
     e.preventDefault();
-    let i = markerAt(e.clientX, e.clientY);
-    if(i!==-1){ isDragging=true; dragIdx=i; canvas.style.cursor='grabbing'; }
+    let idx = getMarkerIndexAt(e.clientX, e.clientY);
+    if(idx !== -1){ isDragging = true; dragIndex = idx; canvas.style.cursor = 'grabbing'; }
   });
   window.addEventListener('mousemove', function(e){
-    if(!isDragging||dragIdx===null) return;
-    const rect = canvas.getBoundingClientRect();
-    let nx=(e.clientX-rect.left)*(canvas.width/rect.width);
-    let ny=(e.clientY-rect.top)*(canvas.height/rect.height);
-    if(!validPos(nx,ny,dragIdx)) return;
-    markers[dragIdx]={x:nx,y:ny,angleDeg:getAngleDeg(nx,ny)};
-    PANEL[dragIdx].clock.value = angleToTime(markers[dragIdx].angleDeg);
+    if(!isDragging || dragIndex === null) return;
+    let {x, y} = getCanvasXY(e.clientX, e.clientY);
+    if(!isInsideClockFace(x, y)) return;
+    clicks[dragIndex] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    updateClockPosFromMarker(dragIndex);
     drawClock();
   });
   window.addEventListener('mouseup', function(){
-    if(isDragging){ isDragging=false; dragIdx=null; canvas.style.cursor='grab'; updateFieldStates(); }
+    isDragging = false; dragIndex = null; canvas.style.cursor = 'grab';
   });
 
-  canvas.addEventListener('click', function(e){
-    if(isDragging) return;
-    if(!topOK()){
-      let topErrs = collectErrors().filter(e =>
-        e.includes('Administrator')||e.includes('Participant')||
-        e.includes('Emotion')||e.includes('Modality')||
-        e.includes('Session Type')||e.includes('Hours')||e.includes('Date')
-      );
-      showPopup(topErrs.length ? topErrs : ['Complete all top fields first']);
-      return;
+  // ── Drag — touch ─────────────────────────────────────────────────────────
+  // Track whether a touchstart began on a marker (for tap-to-place vs drag)
+  let touchStartedOnMarker = false;
+
+  canvas.addEventListener('touchstart', function(e){
+    let t   = e.changedTouches[0];
+    let idx = getMarkerIndexAt(t.clientX, t.clientY);
+    if(idx !== -1){
+      e.preventDefault();
+      isDragging = true; dragIndex = idx; touchStartedOnMarker = true;
+    } else {
+      touchStartedOnMarker = false;
     }
-    const rect = canvas.getBoundingClientRect();
-    let x=(e.clientX-rect.left)*(canvas.width/rect.width);
-    let y=(e.clientY-rect.top)*(canvas.height/rect.height);
-    if(Math.hypot(x-CX,y-CY)>R || Math.hypot(x-CX,y-CY)<40) return;
-    if(markerAt(e.clientX,e.clientY)!==-1) return;
-    let slot = nextSlot();
-    if(slot===null){
-      let errs = collectErrors();
-      if(errs.length) showPopup(errs);
-      else { dynamicHint.innerText='❗ All markers already placed'; setTimeout(updateHint,2000); }
-      return;
-    }
-    if(!validPos(x,y,slot)) return;
-    placeMarker(x,y,slot);
-  });
+  }, { passive: false });
 
-  // ── Hint ──────────────────────────────────────────────────────
-  function updateHint(){
-    if(!topOK()){ dynamicHint.innerText='⚠️ Complete all top fields (Hours must be positive)'; return; }
-    if(!markers[0]){ dynamicHint.innerText='✅ Click clock to place BEFORE marker'; return; }
-    if(!panelOK(0)){ dynamicHint.innerText='🔘 Fill BEFORE fields'; return; }
-    if(blBeforeOn&&!markers[2]){ dynamicHint.innerText='✅ Click clock to place BEFORE-BL marker'; return; }
-    if(blBeforeOn&&!panelOK(2)){ dynamicHint.innerText='🔘 Fill BEFORE-BL fields'; return; }
-    if(!markers[1]){ dynamicHint.innerText='✅ Click clock to place AFTER marker'; return; }
-    if(!panelOK(1)){ dynamicHint.innerText='📝 Fill AFTER fields'; return; }
-    if(blAfterOn&&!markers[3]){ dynamicHint.innerText='✅ Click clock to place AFTER-BL marker'; return; }
-    if(blAfterOn&&!panelOK(3)){ dynamicHint.innerText='📝 Fill AFTER-BL fields'; return; }
-    dynamicHint.innerText='✔ Ready to download';
-  }
+  canvas.addEventListener('touchmove', function(e){
+    if(!isDragging || dragIndex === null) return;
+    e.preventDefault();
+    let t      = e.changedTouches[0];
+    let {x, y} = getCanvasXY(t.clientX, t.clientY);
+    if(!isInsideClockFace(x, y)) return;
+    clicks[dragIndex] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    updateClockPosFromMarker(dragIndex);
+    drawClock();
+  }, { passive: false });
 
-  // ── Bi-location checkboxes ────────────────────────────────────
-  function clearPanel(idx){
-    let p = PANEL[idx];
-    if(p.suds) p.suds.value='';
-    p.dist.value=''; p.spread.value=''; p.eyeLvl.value='';
-    p.eyePos.value='Level'; p.clock.value='';
-    markers[idx]=null;
-  }
+  canvas.addEventListener('touchend', function(e){
+    let wasDragging = isDragging;
+    isDragging = false; dragIndex = null;
 
-  blBeforeChk.addEventListener('change', function(){
-    blBeforeOn = this.checked;
-    $('panel-before-bl').style.display = this.checked ? 'block' : 'none';
-    if(!this.checked) clearPanel(2);
-    drawClock(); updateFieldStates();
-  });
-  blAfterChk.addEventListener('change', function(){
-    blAfterOn = this.checked;
-    $('panel-after-bl').style.display = this.checked ? 'block' : 'none';
-    if(!this.checked) clearPanel(3);
-    drawClock(); updateFieldStates();
-  });
-
-  // ── Eye-level toggles ─────────────────────────────────────────
-  for(let i=0;i<4;i++){
-    (function(idx){
-      PANEL[idx].eyePos.addEventListener('change', function(){
-        PANEL[idx].eyeLvl.disabled = (this.value==='Level') || PANEL[idx].eyePos.disabled;
-        if(this.value==='Level') PANEL[idx].eyeLvl.value=0;
-        updateFieldStates();
-      });
-    })(i);
-  }
-
-  // ── SUDS — live popup on bad value ────────────────────────────
-  [0,1].forEach(idx => {
-    PANEL[idx].suds.addEventListener('change', function(){
-      let v = parseInt(this.value);
-      if(this.value && (isNaN(v)||v<1||v>10)){
-        showPopup(['Feeling Level must be between 1 and 10']);
-        this.value='';
+    // If the touch did NOT start on a marker, treat it as a tap to place
+    if(!touchStartedOnMarker){
+      let t      = e.changedTouches[0];
+      let {x, y} = getCanvasXY(t.clientX, t.clientY);
+      if(!isInsideClockFace(x, y)) return;
+      if(!topComplete()){
+        showPopup('Please complete all top fields first (Hours must be greater than 0).');
+        return;
       }
-      updateFieldStates();
-    });
+      if(clicks.length === 0){
+        addMarker(x, y, 0);
+      } else if(clicks.length === 1 && isBeforeComplete()){
+        addMarker(x, y, 1);
+      } else if(clicks.length === 1 && !isBeforeComplete()){
+        dynamicHint.innerText = '❗ Complete BEFORE fields first';
+        setTimeout(updateHint, 1500);
+      }
+    }
+    touchStartedOnMarker = false;
+  }, { passive: false });
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  function topComplete(){
+    if(!document.getElementById('therapistNumber').value.trim()) return false;
+    if(!document.getElementById('participantNumber').value.trim()) return false;
+    if(!document.getElementById('issueName').value.trim()) return false;
+    if(!document.getElementById('modality').value.trim()) return false;
+    if(!document.getElementById('sessionType').value) return false;
+    let hrs = parseFloat(hoursInput.value);
+    if(isNaN(hrs) || hrs <= 0) return false;
+    if(!document.getElementById('sessionDate').value.trim()) return false;
+    return true;
+  }
+
+  function isBeforeComplete(){
+    if(!clicks[0]) return false;
+    let suds = parseInt(startSudsInput.value);
+    if(isNaN(suds) || suds < 1 || suds > 10) return false;
+    if(startDistance.value.trim() === '' || parseFloat(startDistance.value) < 0) return false;
+    let spread = parseFloat(startSpreadInput.value);
+    if(isNaN(spread) || spread < 0 || spread > 360) return false;
+    if(startEyePos.value !== 'LEVEL' && (!startEyeLevel.value.trim() || parseFloat(startEyeLevel.value) < 0)) return false;
+    if(startEyePos.value === 'LEVEL') startEyeLevel.value = 0;
+    return true;
+  }
+
+  function isAfterComplete(){
+    if(!clicks[1]) return false;
+    let suds = parseInt(endSudsInput.value);
+    if(isNaN(suds) || suds < 1 || suds > 10) return false;
+    if(endDistance.value.trim() === '' || parseFloat(endDistance.value) < 0) return false;
+    let spread = parseFloat(endSpreadInput.value);
+    if(isNaN(spread) || spread < 0 || spread > 360) return false;
+    if(endEyePos.value !== 'LEVEL' && (!endEyeLevel.value.trim() || parseFloat(endEyeLevel.value) < 0)) return false;
+    if(endEyePos.value === 'LEVEL') endEyeLevel.value = 0;
+    return true;
+  }
+
+  function updateFieldStates(){
+    let hasBefore = !!clicks[0];
+    let hasAfter  = !!clicks[1];
+
+    startSudsInput.disabled   = !hasBefore;
+    startDistance.disabled    = !hasBefore;
+    startSpreadInput.disabled = !hasBefore;
+    startEyePos.disabled      = !hasBefore;
+    startEyeLevel.disabled    = !hasBefore || startEyePos.value === 'LEVEL';
+    startClockPos.disabled    = !hasBefore;
+
+    endSudsInput.disabled     = !hasAfter;
+    endDistance.disabled      = !hasAfter;
+    endSpreadInput.disabled   = !hasAfter;
+    endEyePos.disabled        = !hasAfter;
+    endEyeLevel.disabled      = !hasAfter || endEyePos.value === 'LEVEL';
+    endClockPos.disabled      = !hasAfter;
+
+    downloadBtn.disabled = !(topComplete() && isBeforeComplete() && isAfterComplete());
+    updateHint();
+  }
+
+  function updateHint(){
+    if(!topComplete())
+      dynamicHint.innerText = "⚠️ Complete all top fields";
+    else if(clicks.length === 0)
+      dynamicHint.innerText = "✅ Click clock to place BEFORE marker";
+    else if(clicks.length === 1 && !isBeforeComplete())
+      dynamicHint.innerText = "🔘 Fill BEFORE fields (incl. Spread 0-360)";
+    else if(clicks.length === 1 && isBeforeComplete())
+      dynamicHint.innerText = "✅ Click clock to place AFTER marker";
+    else if(clicks.length === 2 && !isAfterComplete())
+      dynamicHint.innerText = "📝 Fill AFTER fields (incl. Spread)";
+    else
+      dynamicHint.innerText = "✔ Ready to download";
+  }
+
+  // ── Field event listeners ─────────────────────────────────────────────────
+  startSpreadInput.addEventListener('input', function(){ drawClock(); updateFieldStates(); });
+  endSpreadInput.addEventListener('input',   function(){ drawClock(); updateFieldStates(); });
+  [startEyeLevel, endEyeLevel].forEach(function(el){
+    el.addEventListener('input', updateFieldStates);
+  });
+  // Redraw clock when distance changes so dotted line updates live
+  [startDistance, endDistance].forEach(function(el){
+    el.addEventListener('input', function(){ drawClock(); updateFieldStates(); });
   });
 
-  // ── Hours — live popup on bad value ───────────────────────────
+  // Clock position fields: typing a valid hh:mm moves the marker
+  startClockPos.addEventListener('change', function(){
+    if(clicks[0]) updateMarkerFromClockPos(0, this.value);
+  });
+  endClockPos.addEventListener('change', function(){
+    if(clicks[1]) updateMarkerFromClockPos(1, this.value);
+  });
+
+  startEyePos.addEventListener('change', function(){
+    if(this.value === 'LEVEL'){ startEyeLevel.value = 0; startEyeLevel.disabled = true; }
+    else { startEyeLevel.value = ''; startEyeLevel.disabled = false; }
+    updateFieldStates();
+  });
+  endEyePos.addEventListener('change', function(){
+    if(this.value === 'LEVEL'){ endEyeLevel.value = 0; endEyeLevel.disabled = true; }
+    else { endEyeLevel.value = ''; endEyeLevel.disabled = false; }
+    updateFieldStates();
+  });
+
+  startSudsInput.addEventListener('change', function(){
+    let v = parseInt(this.value);
+    if(v >= 1 && v <= 10){ startSudsVal = v; }
+    else { if(this.value) showPopup('Feeling Level must be between 1 and 10.'); this.value = ''; }
+    updateFieldStates();
+  });
+  endSudsInput.addEventListener('change', function(){
+    let v = parseInt(this.value);
+    if(v >= 1 && v <= 10){ endSudsVal = v; }
+    else { if(this.value) showPopup('Feeling Level must be between 1 and 10.'); this.value = ''; }
+    updateFieldStates();
+  });
+
+  // Hours: allow only digits and a single decimal point
+  hoursInput.addEventListener('keydown', function(e){
+    let allowed = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
+    if(allowed.includes(e.key)) return;
+    if(e.key === '.' && !this.value.includes('.')) return;
+    if(!/^[0-9]$/.test(e.key)) e.preventDefault();
+  });
+  hoursInput.addEventListener('input', function(){
+    // Strip anything that isn't a digit or single dot
+    let v = this.value.replace(/[^0-9.]/g, '');
+    let parts = v.split('.');
+    if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    this.value = v;
+    updateFieldStates();
+  });
   hoursInput.addEventListener('change', function(){
     let v = parseFloat(this.value);
-    if(this.value && (isNaN(v)||v<=0)){
-      showPopup(['Hours Used must be a positive number greater than 0']);
-      this.value='';
+    if(isNaN(v) || v <= 0){
+      showPopup('Hours must be a positive number (greater than 0).');
+      this.value = '';
     }
     updateFieldStates();
   });
-  hoursInput.addEventListener('input', function(){
-    if(this.value.startsWith('-')) this.value='';
-    let v = parseFloat(this.value);
-    if(!isNaN(v) && v<=0 && this.value!=='') this.value='';
+
+  ['therapistNumber','participantNumber','issueName','modality','sessionType','sessionDate'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.addEventListener('input', updateFieldStates);
+    el.addEventListener('change', updateFieldStates);
   });
+  hoursInput.addEventListener('input', updateFieldStates);
 
-  // ── Live redraw on spread/distance/eyelevel ───────────────────
-  for(let i=0;i<4;i++){
-    PANEL[i].spread.addEventListener('input', function(){ drawClock(); updateFieldStates(); });
-    PANEL[i].dist.addEventListener('input', updateFieldStates);
-    PANEL[i].eyeLvl.addEventListener('input', updateFieldStates);
-  }
-
-  // ── Top fields → state update ─────────────────────────────────
-  ['therapistNumber','participantNumber','issueName','modality','sessionType','sessionDate'].forEach(id=>{
-    $(id).addEventListener('input', updateFieldStates);
-    $(id).addEventListener('change', updateFieldStates);
-  });
-
-  // ── Reset ─────────────────────────────────────────────────────
-  $('resetBtn').addEventListener('click', function(){
-    markers=[null,null,null,null];
-    for(let i=0;i<4;i++) clearPanel(i);
-    blBeforeChk.checked=false; blAfterChk.checked=false;
-    blBeforeOn=false; blAfterOn=false;
-    $('panel-before-bl').style.display='none';
-    $('panel-after-bl').style.display='none';
-    notesTA.value=''; updateWordCounter();
-    drawClock(); updateFieldStates();
-  });
-
-  // ── Word counter ──────────────────────────────────────────────
-  function countWords(s){ return s.trim() ? s.trim().split(/\s+/).length : 0; }
-  function updateWordCounter(){
-    let wc = countWords(notesTA.value);
-    $('wordCounter').innerHTML = `${wc} / 500 words`;
-    if(wc>500) notesTA.value = notesTA.value.trim().split(/\s+/).slice(0,500).join(' ');
-  }
-  notesTA.addEventListener('input', updateWordCounter);
-  updateWordCounter();
-
-  // ── CSV helper — always outputs all BL columns ────────────────
-  // Returns the field value if BL active, otherwise 'n/a'
-  function blVal(isActive, val){
-    return isActive ? (val || '') : 'n/a';
-  }
-
-  // ── Download ──────────────────────────────────────────────────
-  $('downloadBtn').addEventListener('click', async function(){
-    // If somehow button is clicked while disabled, show errors
-    if(downloadBtn.disabled){
-      let errs = collectErrors();
-      if(errs.length) showPopup(errs);
+  // ── Clock click ───────────────────────────────────────────────────────────
+  canvas.addEventListener('click', function(e){
+    if(isDragging) return;
+    if(!topComplete()){
+      showPopup('Please complete all top fields first (Hours must be greater than 0).');
       return;
     }
+    let {x, y} = getCanvasXY(e.clientX, e.clientY);
+    if(!isInsideClockFace(x, y)) return;
 
-    let prefix = `${$('therapistNumber').value}_${$('participantNumber').value}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}`;
+    if(clicks.length === 0){
+      addMarker(x, y, 0);
+    } else if(clicks.length === 1 && isBeforeComplete()){
+      addMarker(x, y, 1);
+    } else if(clicks.length === 1 && !isBeforeComplete()){
+      dynamicHint.innerText = '❗ Complete BEFORE fields first';
+      setTimeout(updateHint, 1500);
+    }
+  });
 
-    // Screenshot
+  // ── Reset ─────────────────────────────────────────────────────────────────
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    clicks = [];
+    [startSudsInput, startDistance, startSpreadInput, startEyeLevel, startClockPos,
+     endSudsInput, endDistance, endSpreadInput, endEyeLevel, endClockPos].forEach(function(el){ el.value = ''; });
+    startEyePos.value = 'LEVEL'; endEyePos.value = 'LEVEL';
+    startSudsVal = null; endSudsVal = null;
+    notesTextarea.value = '';
+    updateWordCounter();
+    drawClock();
+    updateFieldStates();
+  });
+
+  // ── Word counter ──────────────────────────────────────────────────────────
+  function countWords(str){ return str.trim() ? str.trim().split(/\s+/).length : 0; }
+  function updateWordCounter(){
+    let wc = countWords(notesTextarea.value);
+    let el = document.getElementById('wordCounter');
+    el.textContent = wc + ' / 500 words';
+    el.className = 'word-counter' + (wc > 490 ? ' warning' : '');
+    if(wc > 500) notesTextarea.value = notesTextarea.value.split(/\s+/).slice(0, 500).join(' ');
+  }
+  notesTextarea.addEventListener('input', updateWordCounter);
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  document.getElementById('downloadBtn').addEventListener('click', async function(){
+    if(downloadBtn.disabled) return;
+    let prefix = `${document.getElementById('therapistNumber').value}_${document.getElementById('participantNumber').value}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}`;
     let shot = await html2canvas(document.body, {scale:2});
-    let lnk = document.createElement('a');
-    lnk.download = prefix+'_form.png'; lnk.href = shot.toDataURL(); lnk.click();
+    let link = document.createElement('a');
+    link.download = prefix + '_form.png'; link.href = shot.toDataURL(); link.click();
 
-    // CSV — fixed column structure regardless of BL state
-    // Headers
-    const hdr = [
-      'admin','participant','emotion','modality','sessType','hours','date',
-      'startSUDS','startPos','startDist','startSpread','startEyeL','startEyeP',
-      'endSUDS','endPos','endDist','endSpread','endEyeL','endEyeP',
-      'blBefore','blStartPos','blStartDist','blStartSpread','blStartEyeL','blStartEyeP',
-      'blAfter','blEndPos','blEndDist','blEndSpread','blEndEyeL','blEndEyeP',
-      'notes'
-    ].join(';');
-
-    let p = PANEL;
-    const row = [
-      // Top fields
-      $('therapistNumber').value,
-      $('participantNumber').value,
-      $('issueName').value,
-      $('modality').value,
-      $('sessionType').value,
+    let csvHeader = "admin;participant;emotion;modality;sessType;hours;date;startSUDS;startPos;startDist;startSpread;startEyeL;startEyeP;endSUDS;endPos;endDist;endSpread;endEyeL;endEyeP;notes\n";
+    let row = [
+      document.getElementById('therapistNumber').value,
+      document.getElementById('participantNumber').value,
+      document.getElementById('issueName').value,
+      document.getElementById('modality').value,
+      document.getElementById('sessionType').value,
       hoursInput.value,
-      $('sessionDate').value,
-      // Before
-      p[0].suds.value,
-      p[0].clock.value,
-      p[0].dist.value,
-      p[0].spread.value,
-      p[0].eyeLvl.value,
-      p[0].eyePos.value,
-      // After
-      p[1].suds.value,
-      p[1].clock.value,
-      p[1].dist.value,
-      p[1].spread.value,
-      p[1].eyeLvl.value,
-      p[1].eyePos.value,
-      // Before-BL: flag then 5 fields (n/a if not active)
-      blBeforeOn ? '1' : '0',
-      blVal(blBeforeOn, p[2].clock.value),
-      blVal(blBeforeOn, p[2].dist.value),
-      blVal(blBeforeOn, p[2].spread.value),
-      blVal(blBeforeOn, p[2].eyeLvl.value),
-      blVal(blBeforeOn, p[2].eyePos.value),
-      // After-BL: flag then 5 fields (n/a if not active)
-      blAfterOn ? '1' : '0',
-      blVal(blAfterOn, p[3].clock.value),
-      blVal(blAfterOn, p[3].dist.value),
-      blVal(blAfterOn, p[3].spread.value),
-      blVal(blAfterOn, p[3].eyeLvl.value),
-      blVal(blAfterOn, p[3].eyePos.value),
-      // Notes
-      notesTA.value.replace(/;/g,',')
+      document.getElementById('sessionDate').value,
+      startSudsInput.value, startClockPos.value, startDistance.value,
+      startSpreadInput.value, startEyeLevel.value, startEyePos.value,
+      endSudsInput.value, endClockPos.value, endDistance.value,
+      endSpreadInput.value, endEyeLevel.value, endEyePos.value,
+      notesTextarea.value.replace(/;/g, ',')
     ].join(';');
 
-    let blob = new Blob([hdr+'\n'+row], {type:'text/csv'});
+    let blob = new Blob([csvHeader + row], {type:'text/csv'});
     let a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = prefix+'_data.csv'; a.click();
+    a.href = URL.createObjectURL(blob); a.download = prefix + '_data.csv'; a.click();
     URL.revokeObjectURL(a.href);
   });
 
-  // ── Init ──────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────────
   let d = new Date();
-  $('sessionDate').value = `${d.getDate()} ${d.toLocaleString('default',{month:'short'})} ${d.getFullYear()}`.toUpperCase();
+  document.getElementById('sessionDate').value =
+    `${d.getDate()} ${d.toLocaleString('default',{month:'short'})} ${d.getFullYear()}`;
   drawClock();
   updateFieldStates();
+  updateWordCounter();
 
 })();
 </script>

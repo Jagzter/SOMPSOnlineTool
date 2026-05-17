@@ -7,90 +7,90 @@
 <style>
   * { box-sizing: border-box; }
   body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background-color: #f5f5f5; font-size: 1rem; margin: 0; }
-
-  /* ── Top info fields ── */
-  .info-fields { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; max-width: 520px; width: 100%; }
-  .info-row { display: grid; gap: 15px; margin-bottom: 15px; }
-  .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
-  .info-row.row-4cols { grid-template-columns: 1.2fr 0.95fr 0.65fr 1fr; }
-  .info-fields label { font-size: 0.9rem; display: block; margin-bottom: 3px; }
-  .info-fields input, .info-fields select { width: 100%; padding: 5px; font-size: 0.85rem; text-transform: uppercase; }
-
-  /* ── Clock ── */
-  #clockContainer { position: relative; margin: 10px 20px 0; width: 100%; max-width: 500px; overflow: visible; }
+  #clockContainer { position: relative; margin: 20px; width: 100%; max-width: 500px; overflow: visible; }
   #clockCanvas { border: 1px solid #333; border-radius: 50%; background-color: #f9f9f9; display: block; width: 100%; height: auto; cursor: grab; }
   #clockCanvas:active { cursor: grabbing; }
-  .click-hint { background: #fff3cd; padding: 8px 12px; border-radius: 20px; text-align: center; margin: 8px 0 16px; max-width: 500px; width: 100%; }
-  .marker-label { position: absolute; font-weight: bold; background: rgba(255,255,255,0.85); padding: 2px 6px; border-radius: 4px; font-size: 13px; white-space: nowrap; transform: translateX(-50%); }
+  button { margin: 10px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  button:disabled { background-color: #ccc; }
+  .input-containers { display: flex; justify-content: center; gap: 5px; flex-wrap: wrap; }
+  .canvas-input { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.3); width: 240px; margin-bottom: 10px; }
+  .canvas-input-title { font-weight: bold; text-align: center; margin-bottom: 10px; }
+  .distance-spread-row { display: flex; gap: 12px; margin-bottom: 12px; }
+  .distance-spread-row .canvas-input-group { flex: 1; }
+  .canvas-input-group { margin-bottom: 12px; }
+  .canvas-input-group label { font-size: 0.75rem; display: block; margin-bottom: 3px; }
+  .canvas-input label { font-size: 0.9rem; }
 
-  /* ── Two-column panel layout ── */
-  .panels-wrapper { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 520px; align-items: flex-start; }
-  .panel-column { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+  /* CHANGE 1: uppercase display on all text/number inputs */
+  input[type="text"],
+  input[type="number"] { text-transform: uppercase; }
 
-  /* ── Individual panel cards ── */
-  .canvas-input { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.3); width: 100%; }
-  .canvas-input-title { font-weight: bold; text-align: center; margin-bottom: 8px; font-size: 0.95rem; }
-  .canvas-input-group { margin-bottom: 10px; }
-  .canvas-input-group label { font-size: 0.72rem; display: block; margin-bottom: 3px; }
-  .canvas-input input, .canvas-input select { width: 100%; padding: 4px 5px; font-size: 0.72rem; }
-  .distance-spread-row { display: flex; gap: 8px; margin-bottom: 10px; }
-  .distance-spread-row .canvas-input-group { flex: 1; margin-bottom: 0; }
-  .eye-row { display: flex; gap: 6px; align-items: center; }
-
-  /* ── Clock position: display-only ── */
-  input.clock-display {
-    background: #f0f0f0;
-    color: #444;
-    cursor: default;
+  input, select {
+    width: 100%;
+    padding: 8px 6px;
+    font-size: 0.875rem;
+    min-height: 36px;
+    line-height: 1.4;
     border: 1px solid #ccc;
-    font-style: italic;
+    border-radius: 3px;
+    /* Prevent iOS from shrinking inputs */
+    -webkit-appearance: none;
+    appearance: none;
   }
-  input.clock-display:focus { outline: none; box-shadow: none; }
-
-  /* ── Bi-location checkbox ── */
-  .bilocation-row {
-    display: flex; align-items: center; gap: 8px;
-    margin-top: 10px; padding: 5px 6px;
-    background: #f0f4ff; border-radius: 4px; border: 1px solid #c5d0f0;
+  select { background: white; }
+  .info-fields { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; max-width: 520px; width: 100%; }
+  .info-row { display: grid; gap: 10px; margin-bottom: 12px; }
+  .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
+  .info-row.row-4cols { grid-template-columns: 1.2fr 0.95fr 0.65fr 1fr; }
+  @media (max-width: 520px) {
+    /* 3-col stays as-is — three equal columns fits fine on mobile */
+    .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
+    /* 4-col breaks into 2 rows of 2 on mobile */
+    .info-row.row-4cols { grid-template-columns: repeat(2,1fr); }
   }
-  .bilocation-row label { font-size: 0.78rem; font-weight: bold; color: #3a4a8a; cursor: pointer; margin: 0; }
-  .bilocation-row input[type=checkbox] { width: auto; cursor: pointer; accent-color: #3a4a8a; }
+  .info-fields label { font-size: 0.82rem; display: block; margin-bottom: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info-row > div { display: flex; flex-direction: column; justify-content: flex-end; }
+  .eye-row { display: flex; gap: 8px; align-items: center; }
 
-  /* ── Notes ── */
+  /* CHANGE 3: hint sits BELOW the clock */
+  .click-hint { background: #fff3cd; padding: 8px 12px; border-radius: 20px; text-align: center; margin-bottom: 10px; max-width: 500px; width: 100%; }
+
   .notes-container {
-    width: 100%; max-width: 520px; background: white; padding: 15px;
+    width: 100%; max-width: 490px; background: white; padding: 15px;
     border-radius: 5px; box-shadow: 0 0 5px rgba(0,0,0,0.1);
     margin-top: 20px; margin-bottom: 20px;
   }
   .notes-container label { font-weight: bold; display: block; margin-bottom: 8px; }
   .notes-container textarea { width: 100%; min-height: 120px; resize: vertical; font-size: 0.875rem; padding: 8px; }
+  .word-counter { text-align: right; font-size: 0.75rem; color: #666; margin-top: 5px; }
+  .word-counter.warning { color: #d9534f; font-weight: bold; }
 
-  /* ── Dismissable popup ── */
+  /* CHANGE 4: dismissible popup */
   #popupOverlay {
-    position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.45);
-    display: none; align-items: center; justify-content: center; z-index: 10000;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5); display: none;
+    align-items: center; justify-content: center; z-index: 10000;
   }
   #popupOverlay.active { display: flex; }
   #popupBox {
-    background: white; border-radius: 10px; max-width: 420px; width: 90%;
-    padding: 24px 20px 18px; box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    background: white; border-radius: 12px; max-width: 420px;
+    width: 90%; padding: 28px 24px 20px; text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
   }
-  #popupBox h3 { margin: 0 0 12px; font-size: 1rem; color: #c0392b; }
-  #popupList { margin: 0 0 16px; padding-left: 18px; font-size: 0.88rem; line-height: 1.6; color: #333; }
+  #popupMsg { font-size: 1rem; color: #333; margin-bottom: 20px; line-height: 1.5; }
   #popupClose {
-    display: block; margin: 0 auto; padding: 7px 24px;
-    background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem;
+    background: #4CAF50; color: white; border: none; border-radius: 6px;
+    padding: 8px 28px; font-size: 0.95rem; cursor: pointer; margin: 0;
+  }
+  #popupClose:hover { background: #3e8e41; }
+
+  .marker-label {
+    position: absolute; font-weight: bold; background: transparent;
+    padding: 2px 6px; border-radius: 4px; font-size: 14px;
+    white-space: nowrap; transform: translateX(-50%);
   }
 
-  button { margin: 10px; padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
-  button:disabled { background-color: #ccc; cursor: default; }
-
-  @media (max-width: 480px) {
-    .panels-wrapper { flex-direction: column; }
-    .info-row.row-4cols { grid-template-columns: 1fr 1fr; }
-  }
-  .logo-container { text-align: center; margin-bottom: 16px; }
+.logo-container { text-align: center; margin-bottom: 16px; }
 .logo-container img { max-width: 440px; width: 100%; height: auto; }
 </style>
 </head>
@@ -102,125 +102,61 @@
 <!-- Top info fields -->
 <div class="info-fields">
   <div class="info-row row-3cols">
-    <div><label>Administrator Code</label><input type="text" id="therapistNumber" autocomplete="off"></div>
-    <div><label>Participant Code</label><input type="text" id="participantNumber" autocomplete="off"></div>
-    <div><label>Name for Emotion *</label><input type="text" id="issueName" autocomplete="off"></div>
+    <div><label>Admin Code</label><input type="text" id="therapistNumber"></div>
+    <div><label>Participant Code</label><input type="text" id="participantNumber"></div>
+    <div><label>Emotion Name *</label><input type="text" id="issueName"></div>
   </div>
   <div class="info-row row-4cols">
-    <div><label>Therapy Modality</label><input type="text" id="modality" autocomplete="off"></div>
-    <div><label>Session Type</label>
-      <select id="sessionType">
-        <option value="">Select...</option>
-        <option>ONLINE</option>
-        <option>IN-PERSON</option>
-      </select>
-    </div>
-    <div><label>Hours Used</label><input type="number" id="hours" step="any" min="0.01"></div>
-    <div><label>End Date</label><input type="text" id="sessionDate" autocomplete="off"></div>
+    <div><label>Therapy Modality</label><input type="text" id="modality"></div>
+    <div><label>Session Type</label><select id="sessionType"><option value="">Select...</option><option value="ONLINE">ONLINE</option><option value="IN-PERSON">IN-PERSON</option></select></div>
+    <div><label>Hours Used</label><input type="text" id="hours" inputmode="decimal"></div>
+    <div><label>End Date</label><input type="text" id="sessionDate"></div>
   </div>
 </div>
 
-<!-- Clock (hint moves below) -->
+<!-- CHANGE 3: clock first, hint below -->
 <div id="clockContainer">
   <canvas id="clockCanvas" width="500" height="500"></canvas>
 </div>
 <div id="dynamicHint" class="click-hint"></div>
 
-<!-- Two-column panel layout -->
-<div class="panels-wrapper">
-
-  <!-- LEFT COLUMN: Before + Before-BL -->
-  <div class="panel-column">
-
-    <!-- BEFORE -->
-    <div class="canvas-input" id="panel-before">
-      <div class="canvas-input-title" style="color:#FF5733;">BEFORE</div>
-      <!-- 1) Feeling Level at top -->
-      <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="startSuds" min="1" max="10" disabled></div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="startClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="startDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="startSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="startEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="startEyeLevel" min="0" disabled>
-        </div>
-      </div>
-      <div class="bilocation-row">
-        <input type="checkbox" id="blBeforeCheck">
-        <label for="blBeforeCheck">Bi-location</label>
+<div class="input-containers">
+  <div class="canvas-input">
+    <div class="canvas-input-title">BEFORE</div>
+    <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="startSuds" min="1" max="10" disabled></div>
+    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="startClockPos" disabled placeholder="hh:mm"></div>
+    <div class="distance-spread-row">
+      <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="startDistance" min="0" disabled></div>
+      <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="startSpread" min="0" max="360" step="1" disabled></div>
+    </div>
+    <div><label>Eye Level (cm):</label>
+      <div class="eye-row">
+        <select id="startEyePos" disabled><option value="ABOVE">ABOVE</option><option value="LEVEL" selected>LEVEL</option><option value="BELOW">BELOW</option></select>
+        <input type="number" id="startEyeLevel" min="0" disabled>
       </div>
     </div>
-
-    <!-- BEFORE-BL (no Feeling Level) -->
-    <div class="canvas-input" id="panel-before-bl" style="display:none;">
-      <div class="canvas-input-title" style="color:#0055cc;">BEFORE-BL</div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="blStartClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="blStartDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="blStartSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="blStartEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="blStartEyeLevel" min="0" disabled>
-        </div>
+  </div>
+  <div class="canvas-input">
+    <div class="canvas-input-title">AFTER</div>
+    <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="endSuds" min="1" max="10" disabled></div>
+    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="endClockPos" disabled placeholder="hh:mm"></div>
+    <div class="distance-spread-row">
+      <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="endDistance" min="0" disabled></div>
+      <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="endSpread" min="0" max="360" step="1" disabled></div>
+    </div>
+    <div><label>Eye Level (cm):</label>
+      <div class="eye-row">
+        <select id="endEyePos" disabled><option value="ABOVE">ABOVE</option><option value="LEVEL" selected>LEVEL</option><option value="BELOW">BELOW</option></select>
+        <input type="number" id="endEyeLevel" min="0" disabled>
       </div>
     </div>
-
-  </div><!-- /left column -->
-
-  <!-- RIGHT COLUMN: After + After-BL -->
-  <div class="panel-column">
-
-    <!-- AFTER -->
-    <div class="canvas-input" id="panel-after">
-      <div class="canvas-input-title" style="color:#33AA33;">AFTER</div>
-      <!-- 1) Feeling Level at top -->
-      <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="endSuds" min="1" max="10" disabled></div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="endClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="endDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="endSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="endEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="endEyeLevel" min="0" disabled>
-        </div>
-      </div>
-      <div class="bilocation-row">
-        <input type="checkbox" id="blAfterCheck">
-        <label for="blAfterCheck">Bi-location</label>
-      </div>
-    </div>
-
-    <!-- AFTER-BL (no Feeling Level) -->
-    <div class="canvas-input" id="panel-after-bl" style="display:none;">
-      <div class="canvas-input-title" style="color:#9900cc;">AFTER-BL</div>
-      <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="blEndClockPos" readonly class="clock-display"></div>
-      <div class="distance-spread-row">
-        <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="blEndDistance" min="0" disabled></div>
-        <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="blEndSpread" min="0" max="360" step="1" disabled></div>
-      </div>
-      <div class="canvas-input-group"><label>Eye Level (cm):</label>
-        <div class="eye-row">
-          <select id="blEndEyePos" disabled><option>Above</option><option selected>Level</option><option>Below</option></select>
-          <input type="number" id="blEndEyeLevel" min="0" disabled>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /right column -->
-
-</div><!-- /panels-wrapper -->
+  </div>
+</div>
 
 <div class="notes-container">
   <label>📝 Notes (optional, up to 500 words)</label>
   <textarea id="notes" rows="4"></textarea>
-  <div id="wordCounter" style="text-align:right; font-size:0.75rem;">0 / 500 words</div>
+  <div id="wordCounter" class="word-counter">0 / 500 words</div>
 </div>
 
 <div style="display:flex; justify-content:center;">
@@ -228,11 +164,10 @@
   <button id="resetBtn">Reset</button>
 </div>
 
-<!-- Dismissable popup -->
+<!-- CHANGE 4: single dismissible popup for all errors -->
 <div id="popupOverlay">
   <div id="popupBox">
-    <h3>⚠️ Please fix the following:</h3>
-    <ul id="popupList"></ul>
+    <div id="popupMsg"></div>
     <button id="popupClose">OK</button>
   </div>
 </div>
@@ -241,491 +176,728 @@
 <script>
 (function(){
 
-  // ── Canvas ────────────────────────────────────────────────────
-  const canvas = document.getElementById('clockCanvas');
-  const ctx    = canvas.getContext('2d');
-  const CX = 250, CY = 250, R = 200;
-
-  // 0=Before  1=After  2=Before-BL  3=After-BL
-  const COLORS = ['#FF5733','#33AA33','#0055cc','#9900cc'];
-  const LABELS = ['Before','After','Before-BL','After-BL'];
-
-  let markers    = [null,null,null,null];
-  let blBeforeOn = false, blAfterOn = false;
-  let isDragging = false, dragIdx = null;
-
-  const $ = id => document.getElementById(id);
-
-  // ── Panel field groups (indexed 0-3) ──────────────────────────
-  // BL panels (2,3) have no suds field — null
-  const PANEL = [
-    { suds:$('startSuds'),  clock:$('startClockPos'), dist:$('startDistance'),
-      spread:$('startSpread'), eyePos:$('startEyePos'), eyeLvl:$('startEyeLevel') },
-    { suds:$('endSuds'),    clock:$('endClockPos'),   dist:$('endDistance'),
-      spread:$('endSpread'),   eyePos:$('endEyePos'),  eyeLvl:$('endEyeLevel') },
-    { suds:null, clock:$('blStartClockPos'), dist:$('blStartDistance'),
-      spread:$('blStartSpread'), eyePos:$('blStartEyePos'), eyeLvl:$('blStartEyeLevel') },
-    { suds:null, clock:$('blEndClockPos'),   dist:$('blEndDistance'),
-      spread:$('blEndSpread'),   eyePos:$('blEndEyePos'),   eyeLvl:$('blEndEyeLevel') }
-  ];
-
-  const hoursInput  = $('hours');
-  const downloadBtn = $('downloadBtn');
-  const dynamicHint = $('dynamicHint');
-  const notesTA     = $('notes');
-  const blBeforeChk = $('blBeforeCheck');
-  const blAfterChk  = $('blAfterCheck');
-
-  // ── Popup ─────────────────────────────────────────────────────
-  const popupOverlay = $('popupOverlay');
-  const popupList    = $('popupList');
-  $('popupClose').addEventListener('click', () => popupOverlay.classList.remove('active'));
-  popupOverlay.addEventListener('click', e => { if(e.target===popupOverlay) popupOverlay.classList.remove('active'); });
-
-  function showPopup(errors){
-    popupList.innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+  // ── CHANGE 4: popup helper replaces all alert() calls ─────────────────────
+  const popupOverlay = document.getElementById('popupOverlay');
+  const popupMsg     = document.getElementById('popupMsg');
+  document.getElementById('popupClose').addEventListener('click', function(){
+    popupOverlay.classList.remove('active');
+  });
+  function showPopup(msg){
+    popupMsg.textContent = msg;
     popupOverlay.classList.add('active');
   }
 
-  // ── Uppercase enforcement for top text inputs ─────────────────
-  ['therapistNumber','participantNumber','issueName','modality','sessionDate'].forEach(id => {
-    $(id).addEventListener('input', function(){ this.value = this.value.toUpperCase(); });
+  // ── Canvas setup ──────────────────────────────────────────────────────────
+  const canvas  = document.getElementById('clockCanvas');
+  const ctx     = canvas.getContext('2d');
+  const centerX = 250, centerY = 250, radius = 200;
+  let clicks = [];
+  let startSudsVal = null, endSudsVal = null;
+  let isDragging = false, dragIndex = null;
+
+  // ── Input references ───────────────────────────────────────────────────────
+  const startSpreadInput = document.getElementById('startSpread');
+  const endSpreadInput   = document.getElementById('endSpread');
+  const startSudsInput   = document.getElementById('startSuds');
+  const endSudsInput     = document.getElementById('endSuds');
+  const startDistance    = document.getElementById('startDistance');
+  const endDistance      = document.getElementById('endDistance');
+  const startEyeLevel    = document.getElementById('startEyeLevel');
+  const endEyeLevel      = document.getElementById('endEyeLevel');
+  const startEyePos      = document.getElementById('startEyePos');
+  const endEyePos        = document.getElementById('endEyePos');
+  const startClockPos    = document.getElementById('startClockPos');
+  const endClockPos      = document.getElementById('endClockPos');
+  const hoursInput       = document.getElementById('hours');
+  const downloadBtn      = document.getElementById('downloadBtn');
+  const dynamicHint      = document.getElementById('dynamicHint');
+  const notesTextarea    = document.getElementById('notes');
+
+  // ── CHANGE 1: uppercase enforcement on all text inputs ────────────────────
+  document.querySelectorAll('input[type="text"]').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      // Clock position fields use hh:mm format — skip uppercase for them
+      if(this.id === 'startClockPos' || this.id === 'endClockPos') return;
+      var pos = this.selectionStart;
+      this.value = this.value.toUpperCase();
+      this.setSelectionRange(pos, pos);
+    });
   });
 
-  // ── Floating marker labels ────────────────────────────────────
-  const floatLabels = LABELS.map((txt,i) => {
-    const d = document.createElement('div');
-    d.className = 'marker-label';
-    d.style.color = COLORS[i];
-    d.style.display = 'none';
-    $('clockContainer').appendChild(d);
-    return d;
+  // ── CHANGE 2: block negative values on all numeric inputs ─────────────────
+  document.querySelectorAll('input[type="number"]').forEach(function(inp){
+    inp.addEventListener('keydown', function(e){
+      if(e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
+    });
+    inp.addEventListener('input', function(){
+      if(this.value !== '' && parseFloat(this.value) < 0) this.value = '';
+    });
   });
 
-  // ── Geometry helpers ──────────────────────────────────────────
-  function getAngleDeg(x,y){
-    return ((Math.atan2(y-CY, x-CX) * 180/Math.PI + 360) % 360 + 90) % 360;
+  // ── Geometry ───────────────────────────────────────────────────────────────
+  function getAngleFromXY(x, y){
+    let deg = (Math.atan2(y - centerY, x - centerX) * 180 / Math.PI + 360) % 360;
+    return (deg + 90) % 360; // 0° = 12 o'clock, clockwise
   }
-  function angleToTime(deg){
-    let mins = Math.round((deg/360)*720/5)*5;
-    if(mins >= 720) mins = 0;
-    let h = Math.floor(mins/60) || 12, m = mins%60;
-    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+
+  function updateClockPosFromMarker(index){
+    if(!clicks[index]) return;
+    let totalMin = Math.round(clicks[index].angleDeg / 360 * 720 / 5) * 5;
+    if(totalMin >= 720) totalMin = 0;
+    let hour = Math.floor(totalMin / 60) || 12;
+    let min  = totalMin % 60;
+    let str  = `${hour.toString().padStart(2,'0')}:${min.toString().padStart(2,'0')}`;
+    if(index === 0) startClockPos.value = str;
+    else            endClockPos.value   = str;
   }
-  function validPos(x,y,excl){
-    let d = Math.hypot(x-CX, y-CY);
-    if(d > R || d < 40) return false;
-    for(let i=0;i<4;i++){
-      if(i===excl || !markers[i]) continue;
-      if(Math.hypot(x-markers[i].x, y-markers[i].y) < 15) return false;
+
+  // Parse a typed hh:mm value and move the corresponding marker to that clock position.
+  // The marker keeps its current distance from centre; only the angle changes.
+  function updateMarkerFromClockPos(index, timeStr){
+    let str = timeStr.trim();
+
+    // Auto-format bare 3-4 digit numbers into hh:mm (e.g. "0100" -> "01:00", "700" -> "07:00")
+    if(/^\d{3,4}$/.test(str)){
+      str = str.padStart(4, '0');          // ensure 4 digits
+      str = str.slice(0, 2) + ':' + str.slice(2);
     }
-    return true;
+
+    let match = str.match(/^(\d{1,2}):(\d{2})$/);
+    if(!match){
+      showPopup('Clock position must be in hh:mm format (e.g. 12:00 to 11:59).');
+      updateClockPosFromMarker(index);
+      return;
+    }
+    let hour = parseInt(match[1]);
+    let min  = parseInt(match[2]);
+    let valid = (hour >= 1 && hour <= 12) && (min >= 0 && min <= 59);
+    if(!valid){
+      showPopup('Clock position must be between 12:00 and 11:59.');
+      updateClockPosFromMarker(index);
+      return;
+    }
+    // Update the field to show the formatted value
+    let inp = index === 0 ? startClockPos : endClockPos;
+    inp.value = str;
+
+    if(hour === 12) hour = 0;
+    let totalMin  = hour * 60 + min;
+    let angleDeg  = (totalMin / 720) * 360;
+    let canvasAng = (angleDeg - 90 + 360) % 360;
+    let canvasRad = canvasAng * Math.PI / 180;
+    let dist = clicks[index]
+      ? Math.hypot(clicks[index].x - centerX, clicks[index].y - centerY)
+      : radius * 0.75;
+    let newX = centerX + Math.cos(canvasRad) * dist;
+    let newY = centerY + Math.sin(canvasRad) * dist;
+    clicks[index] = { x: newX, y: newY, angleDeg: angleDeg };
+    drawClock();
+    updateFieldStates();
   }
-  function markerAt(cx,cy){
+
+  // ── Spread wedge ──────────────────────────────────────────────────────────
+  // For each ray direction, compute the exact distance from the marker (mx,my)
+  // to the clock face circle boundary and draw the fan out to that edge.
+  function rayToCircleEdge(mx, my, ang){
+    // Ray: P = (mx,my) + t*(cos(ang),sin(ang))
+    // Circle: (P.x - cx)^2 + (P.y - cy)^2 = r^2
+    // Solve quadratic: t^2 + 2*(dx*cos+dy*sin)*t + (dx^2+dy^2-r^2) = 0
+    let dx = mx - centerX, dy = my - centerY;
+    let cosA = Math.cos(ang), sinA = Math.sin(ang);
+    let b = dx * cosA + dy * sinA;          // half of linear term
+    let c = dx * dx + dy * dy - radius * radius;
+    let disc = b * b - c;
+    if(disc < 0) return 0;
+    let t = -b + Math.sqrt(disc);           // positive root = forward intersection
+    return Math.max(0, t);
+  }
+
+  function drawSpreadArcFromMarker(mx, my, angleDeg, spreadDeg, color){
+    if(spreadDeg <= 0) return;
+    let dx           = mx - centerX, dy = my - centerY;
+    let outwardAngle = Math.atan2(dy, dx);
+    let halfSpread   = (spreadDeg * Math.PI / 180) / 2;
+    let startAng     = outwardAngle - halfSpread;
+    let endAng       = outwardAngle + halfSpread;
+    let steps        = Math.max(16, Math.floor(spreadDeg / 5));
+
+    // filled wedge
+    ctx.save();
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.moveTo(mx, my);
+    for(let i = 0; i <= steps; i++){
+      let ang = startAng + (i / steps) * (endAng - startAng);
+      let t   = rayToCircleEdge(mx, my, ang);
+      ctx.lineTo(mx + Math.cos(ang) * t, my + Math.sin(ang) * t);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color; ctx.fill();
+    ctx.globalAlpha = 0.8;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
+    ctx.restore();
+
+    // double-sided arc arrow at 2/3 along the centre ray
+    let midT = rayToCircleEdge(mx, my, outwardAngle);
+    let arcR = midT * (2 / 3);
+    if(arcR < 6) return;
+
+    ctx.save();
+    ctx.globalAlpha = 1.0;
+    ctx.strokeStyle = color;
+    ctx.fillStyle   = color;
+    ctx.lineWidth   = 2;
+
+    ctx.beginPath();
+    ctx.arc(mx, my, arcR, startAng, endAng);
+    ctx.stroke();
+
+    // Arrowhead: tip points OUTWARD (away from wedge centre).
+    // tipAng = angle on arc where the arrowhead sits.
+    // The tangent at tipAng is perpendicular to the radius: tanAng = tipAng ± PI/2.
+    // "Outward" means away from outwardAngle, so:
+    //   at startAng the outward tangent points in the -PI/2 direction (decreasing angle)
+    //   at endAng   the outward tangent points in the +PI/2 direction (increasing angle)
+    // Wings sit INSIDE the wedge (back along the arc toward outwardAngle).
+    function arrowHead(tipAng, outwardTanAng){
+      let headLen = Math.min(10, arcR * 0.35);
+      let tipX = mx + Math.cos(tipAng) * arcR;
+      let tipY = my + Math.sin(tipAng) * arcR;
+      let wingAng = Math.PI / 7;
+      // Wings go in the opposite direction to the tip (inward, toward wedge centre)
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI - wingAng) * headLen,
+                 tipY + Math.sin(outwardTanAng + Math.PI - wingAng) * headLen);
+      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI + wingAng) * headLen,
+                 tipY + Math.sin(outwardTanAng + Math.PI + wingAng) * headLen);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // At startAng: outward tangent is in the -PI/2 direction (decreasing angle = away from wedge)
+    arrowHead(startAng, startAng - Math.PI / 2);
+    // At endAng: outward tangent is in the +PI/2 direction (increasing angle = away from wedge)
+    arrowHead(endAng,   endAng   + Math.PI / 2);
+
+    ctx.restore();
+  }
+
+  // ── Draw ──────────────────────────────────────────────────────────────────
+  function drawClock(){
+    ctx.clearRect(0, 0, 500, 500);
+
+    // Face
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
+
+    // Hour positions
+    ctx.font = 'bold 16px Arial'; ctx.fillStyle = '#333';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    for(let i = 1; i <= 12; i++){
+      let angle = (i - 3) * Math.PI / 6;
+      let x = centerX + Math.cos(angle) * (radius * 0.8);
+      let y = centerY + Math.sin(angle) * (radius * 0.8);
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillText(i.toString(),
+        centerX + Math.cos(angle) * (radius * 0.92),
+        centerY + Math.sin(angle) * (radius * 0.92));
+    }
+
+    // Centre dot — drawn before markers so markers always appear on top
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = 'magenta'; ctx.fill();
+
+    // Spread wedges — also drawn before markers
+    if(clicks[0] && !startSpreadInput.disabled){
+      let s = parseFloat(startSpreadInput.value);
+      if(!isNaN(s) && s > 0)
+        drawSpreadArcFromMarker(clicks[0].x, clicks[0].y, clicks[0].angleDeg, s, '#FF5733');
+    }
+    if(clicks[1] && !endSpreadInput.disabled){
+      let s = parseFloat(endSpreadInput.value);
+      if(!isNaN(s) && s > 0)
+        drawSpreadArcFromMarker(clicks[1].x, clicks[1].y, clicks[1].angleDeg, s, '#33FF57');
+    }
+
+    // Distance lines — drawn before markers so dots sit on top
+    for(let i = 0; i < clicks.length; i++){
+      let c        = clicks[i];
+      let distInp  = i === 0 ? startDistance : endDistance;
+      let color    = i === 0 ? '#FF5733' : '#33FF57';
+      let distVal  = parseFloat(distInp.value);
+      let distFromCentre = Math.hypot(c.x - centerX, c.y - centerY);
+
+      // Only draw when a distance has been entered and marker isn't on the centre dot
+      if(!isNaN(distVal) && distVal > 0 && distFromCentre > 20){
+        let outAng = Math.atan2(c.y - centerY, c.x - centerX);
+
+        // Dotted line from edge of centre dot (r=20) to edge of marker dot (r=10)
+        let lineStartX = centerX + Math.cos(outAng) * 20;
+        let lineStartY = centerY + Math.sin(outAng) * 20;
+        let lineEndX   = c.x - Math.cos(outAng) * 10;
+        let lineEndY   = c.y - Math.sin(outAng) * 10;
+
+        ctx.save();
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = color;
+        ctx.lineWidth   = 1.5;
+        ctx.globalAlpha = 0.85;
+        ctx.beginPath();
+        ctx.moveTo(lineStartX, lineStartY);
+        ctx.lineTo(lineEndX, lineEndY);
+        ctx.stroke();
+        ctx.restore();
+
+        // Distance label at midpoint of the line, offset perpendicular so it
+        // doesn't sit directly on the line
+        let midX    = (lineStartX + lineEndX) / 2;
+        let midY    = (lineStartY + lineEndY) / 2;
+        // Perpendicular offset (rotate outAng by 90°)
+        let perpX   = midX - Math.sin(outAng) * 12;
+        let perpY   = midY + Math.cos(outAng) * 12;
+        let label   = distVal + 'm';
+
+        ctx.save();
+        ctx.font         = 'bold 11px Arial';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        // White halo for legibility
+        ctx.strokeStyle  = '#fff';
+        ctx.lineWidth    = 3;
+        ctx.strokeText(label, perpX, perpY);
+        ctx.fillStyle    = color;
+        ctx.fillText(label, perpX, perpY);
+        ctx.restore();
+      }
+    }
+
+    // Markers drawn last so they always appear on top of everything.
+    // No exclusion zones — markers may overlap each other and the centre dot.
+    for(let i = 0; i < clicks.length; i++){
+      let c     = clicks[i];
+      let color = i === 0 ? '#FF5733' : '#33FF57';
+
+      // Dot
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, 10, 0, 2 * Math.PI);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.stroke();
+
+      // Outward-pointing chevron: direction from centre through the marker
+      let outAng  = Math.atan2(c.y - centerY, c.x - centerX);
+      let dotR    = 10;          // marker radius
+      let chevLen = 9;           // length of each chevron arm
+      let chevGap = 4;           // how far the chevron tip sits beyond the dot edge
+      let tipX    = c.x + Math.cos(outAng) * (dotR + chevGap + chevLen * 0.45);
+      let tipY    = c.y + Math.sin(outAng) * (dotR + chevGap + chevLen * 0.45);
+      // Wings spread ±35° back from the tip
+      let wingAng = Math.PI / 5;
+      let w1x = tipX - Math.cos(outAng - wingAng) * chevLen;
+      let w1y = tipY - Math.sin(outAng - wingAng) * chevLen;
+      let w2x = tipX - Math.cos(outAng + wingAng) * chevLen;
+      let w2y = tipY - Math.sin(outAng + wingAng) * chevLen;
+
+      ctx.save();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 2.5;
+      ctx.lineJoin    = 'round';
+      ctx.lineCap     = 'round';
+      ctx.beginPath();
+      ctx.moveTo(w1x, w1y);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(w2x, w2y);
+      ctx.stroke();
+      // Draw again in black on top
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(w1x, w1y);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(w2x, w2y);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    updateLabelPositions();
+  }
+
+  // ── Floating labels ────────────────────────────────────────────────────────
+  const labelStart = document.createElement('div');
+  const labelEnd   = document.createElement('div');
+  [labelStart, labelEnd].forEach(function(l){
+    l.className = 'marker-label'; l.style.display = 'none';
+    document.getElementById('clockContainer').appendChild(l);
+  });
+
+  function updateLabelPositions(){
+    const cRect = document.getElementById('clockContainer').getBoundingClientRect();
+    const kRect = canvas.getBoundingClientRect();
+    const ox = kRect.left - cRect.left, oy = kRect.top - cRect.top;
+    const sx = canvas.clientWidth / canvas.width, sy = canvas.clientHeight / canvas.height;
+
+    if(clicks[0]){
+      labelStart.textContent = 'Before'; labelStart.style.color = '#FF5733';
+      labelStart.style.left = (ox + clicks[0].x * sx) + 'px';
+      labelStart.style.top  = (oy + clicks[0].y * sy + 20) + 'px';
+      labelStart.style.display = 'block';
+    } else { labelStart.style.display = 'none'; }
+
+    if(clicks[1]){
+      labelEnd.textContent = 'After'; labelEnd.style.color = '#33FF57';
+      labelEnd.style.left = (ox + clicks[1].x * sx) + 'px';
+      labelEnd.style.top  = (oy + clicks[1].y * sy + 20) + 'px';
+      labelEnd.style.display = 'block';
+    } else { labelEnd.style.display = 'none'; }
+  }
+  window.addEventListener('resize', updateLabelPositions);
+
+  // ── Marker helpers ─────────────────────────────────────────────────────────
+  function addMarker(x, y, index){
+    clicks[index] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    updateClockPosFromMarker(index);
+    drawClock();
+    updateFieldStates();
+  }
+
+  // CHANGE 5: only boundary check — inside the clock face circle.
+  // No minimum distance from centre, no exclusion around other markers.
+  function isInsideClockFace(x, y){
+    return Math.hypot(x - centerX, y - centerY) <= radius;
+  }
+
+  // Hit-test iterates in reverse so topmost (last-drawn) marker is picked first.
+  // Hit radius 26px canvas units to accommodate fat fingers on mobile.
+  function getMarkerIndexAt(clientX, clientY){
     const rect = canvas.getBoundingClientRect();
-    const px = (cx-rect.left)*(canvas.width/rect.width);
-    const py = (cy-rect.top)*(canvas.height/rect.height);
-    for(let i=3;i>=0;i--){
-      if(markers[i] && Math.hypot(px-markers[i].x, py-markers[i].y) <= 12) return i;
+    const cx = (clientX - rect.left) * (canvas.width  / rect.width);
+    const cy = (clientY - rect.top)  * (canvas.height / rect.height);
+    for(let i = clicks.length - 1; i >= 0; i--){
+      if(clicks[i] && Math.hypot(cx - clicks[i].x, cy - clicks[i].y) <= 26) return i;
     }
     return -1;
   }
 
-  // ── Drawing ───────────────────────────────────────────────────
-  function drawWedge(mx,my,spreadDeg,color){
-    if(spreadDeg <= 0) return;
-    let dx=mx-CX, dy=my-CY;
-    let out = Math.atan2(dy,dx);
-    let half = (spreadDeg*Math.PI/180)/2;
-    let len = Math.min(70, Math.max(30, (R-Math.hypot(dx,dy))*0.8));
-    let steps = Math.max(8, Math.floor(spreadDeg/10));
-    ctx.save();
-    ctx.globalAlpha = 0.4;
-    ctx.beginPath(); ctx.moveTo(mx,my);
-    for(let i=0;i<=steps;i++){
-      let a = out - half + i/steps*(2*half);
-      ctx.lineTo(mx+Math.cos(a)*len, my+Math.sin(a)*len);
-    }
-    ctx.closePath();
-    ctx.fillStyle = color; ctx.fill();
-    ctx.globalAlpha = 0.8; ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
-    ctx.restore();
+  function getCanvasXY(clientX, clientY){
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) * (canvas.width  / rect.width),
+      y: (clientY - rect.top)  * (canvas.height / rect.height)
+    };
   }
 
-  function drawClock(){
-    ctx.clearRect(0,0,500,500);
-    ctx.beginPath(); ctx.arc(CX,CY,R,0,2*Math.PI);
-    ctx.strokeStyle='#333'; ctx.lineWidth=3; ctx.stroke();
-    ctx.font='bold 16px Arial'; ctx.fillStyle='#333';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(let i=1;i<=12;i++){
-      let a=(i-3)*Math.PI/6;
-      let x=CX+Math.cos(a)*R*0.8, y=CY+Math.sin(a)*R*0.8;
-      ctx.beginPath(); ctx.arc(x,y,3,0,2*Math.PI); ctx.fill();
-      ctx.fillText(i, CX+Math.cos(a)*R*0.92, CY+Math.sin(a)*R*0.92);
-    }
-    ctx.beginPath(); ctx.arc(CX,CY,20,0,2*Math.PI); ctx.fillStyle='magenta'; ctx.fill();
-    for(let i=0;i<4;i++){
-      if(!markers[i] || PANEL[i].spread.disabled) continue;
-      let s = parseFloat(PANEL[i].spread.value);
-      if(!isNaN(s) && s>0) drawWedge(markers[i].x, markers[i].y, s, COLORS[i]);
-    }
-    for(let i=0;i<4;i++){
-      if(!markers[i]) continue;
-      ctx.beginPath(); ctx.arc(markers[i].x, markers[i].y, 10, 0, 2*Math.PI);
-      ctx.fillStyle=COLORS[i]; ctx.fill();
-      ctx.strokeStyle='#333'; ctx.lineWidth=1.5; ctx.stroke();
-    }
-    updateFloats();
-  }
-
-  function updateFloats(){
-    const cr = $('clockContainer').getBoundingClientRect();
-    const cv = canvas.getBoundingClientRect();
-    const ox=cv.left-cr.left, oy=cv.top-cr.top;
-    const sx=canvas.clientWidth/canvas.width, sy=canvas.clientHeight/canvas.height;
-    for(let i=0;i<4;i++){
-      if(markers[i]){
-        floatLabels[i].textContent = LABELS[i];
-        floatLabels[i].style.left  = (ox+markers[i].x*sx)+'px';
-        floatLabels[i].style.top   = (oy+markers[i].y*sy+20)+'px';
-        floatLabels[i].style.display = 'block';
-      } else { floatLabels[i].style.display = 'none'; }
-    }
-  }
-  window.addEventListener('resize', updateFloats);
-
-  // ── Validation ────────────────────────────────────────────────
-  function topOK(){
-    return $('therapistNumber').value.trim() &&
-           $('participantNumber').value.trim() &&
-           $('issueName').value.trim() &&
-           $('modality').value.trim() &&
-           $('sessionType').value &&
-           parseFloat(hoursInput.value) > 0 &&
-           $('sessionDate').value.trim();
-  }
-
-  function panelOK(idx){
-    let p = PANEL[idx];
-    if(!markers[idx]) return false;
-    if(p.suds){ // only primary panels have SUDS
-      let s = parseInt(p.suds.value);
-      if(isNaN(s)||s<1||s>10) return false;
-    }
-    if(!p.dist.value.trim() || parseFloat(p.dist.value)<0) return false;
-    let sp = parseFloat(p.spread.value);
-    if(isNaN(sp)||sp<0||sp>360) return false;
-    if(p.eyePos.value!=='Level' && (!p.eyeLvl.value.trim()||parseFloat(p.eyeLvl.value)<0)) return false;
-    return true;
-  }
-
-  function collectErrors(){
-    let errs = [];
-    if(!$('therapistNumber').value.trim()) errs.push('Administrator Code is required');
-    if(!$('participantNumber').value.trim()) errs.push('Participant Code is required');
-    if(!$('issueName').value.trim()) errs.push('Name for Emotion is required');
-    if(!$('modality').value.trim()) errs.push('Therapy Modality is required');
-    if(!$('sessionType').value) errs.push('Session Type must be selected');
-    let hrs = parseFloat(hoursInput.value);
-    if(isNaN(hrs)||hrs<=0) errs.push('Hours Used must be a positive number');
-    if(!$('sessionDate').value.trim()) errs.push('End Date is required');
-    if(!markers[0]) errs.push('BEFORE marker not placed on clock');
-    else if(!panelOK(0)) errs.push('BEFORE panel: check Feeling Level (1-10), Distance, Spread, and Eye Level');
-    if(blBeforeOn){
-      if(!markers[2]) errs.push('BEFORE-BL marker not placed on clock');
-      else if(!panelOK(2)) errs.push('BEFORE-BL panel: check Distance, Spread, and Eye Level');
-    }
-    if(!markers[1]) errs.push('AFTER marker not placed on clock');
-    else if(!panelOK(1)) errs.push('AFTER panel: check Feeling Level (1-10), Distance, Spread, and Eye Level');
-    if(blAfterOn){
-      if(!markers[3]) errs.push('AFTER-BL marker not placed on clock');
-      else if(!panelOK(3)) errs.push('AFTER-BL panel: check Distance, Spread, and Eye Level');
-    }
-    return errs;
-  }
-
-  // ── Enable/disable panels ─────────────────────────────────────
-  function enablePanel(idx, on){
-    let p = PANEL[idx];
-    if(p.suds) p.suds.disabled = !on;
-    p.dist.disabled = !on; p.spread.disabled = !on;
-    p.eyePos.disabled = !on;
-    p.eyeLvl.disabled = !on || (p.eyePos.value==='Level');
-    // clock is always readonly — value set only by clock face, never disabled
-  }
-
-  function updateFieldStates(){
-    for(let i=0;i<4;i++) enablePanel(i, !!markers[i]);
-    let ready = topOK() && panelOK(0) && panelOK(1);
-    if(blBeforeOn) ready = ready && panelOK(2);
-    if(blAfterOn)  ready = ready && panelOK(3);
-    downloadBtn.disabled = !ready;
-    updateHint();
-  }
-
-  // ── Placement sequence: 0 → (2 if blBefore) → 1 → (3 if blAfter) ──
-  function nextSlot(){
-    if(!markers[0]) return 0;
-    if(blBeforeOn && !markers[2] && panelOK(0)) return 2;
-    if(!markers[1]){
-      if(!panelOK(0)) return null;
-      if(blBeforeOn && !panelOK(2)) return null;
-      return 1;
-    }
-    if(blAfterOn && !markers[3] && panelOK(1)) return 3;
-    return null;
-  }
-
-  function placeMarker(x,y,idx){
-    markers[idx] = {x, y, angleDeg: getAngleDeg(x,y)};
-    PANEL[idx].clock.value = angleToTime(markers[idx].angleDeg);
-    drawClock();
-    updateFieldStates();
-  }
-
-  // ── Mouse handlers ────────────────────────────────────────────
+  // ── Drag — mouse ─────────────────────────────────────────────────────────
   canvas.addEventListener('mousedown', function(e){
     e.preventDefault();
-    let i = markerAt(e.clientX, e.clientY);
-    if(i!==-1){ isDragging=true; dragIdx=i; canvas.style.cursor='grabbing'; }
+    let idx = getMarkerIndexAt(e.clientX, e.clientY);
+    if(idx !== -1){ isDragging = true; dragIndex = idx; canvas.style.cursor = 'grabbing'; }
   });
   window.addEventListener('mousemove', function(e){
-    if(!isDragging||dragIdx===null) return;
-    const rect = canvas.getBoundingClientRect();
-    let nx=(e.clientX-rect.left)*(canvas.width/rect.width);
-    let ny=(e.clientY-rect.top)*(canvas.height/rect.height);
-    if(!validPos(nx,ny,dragIdx)) return;
-    markers[dragIdx]={x:nx,y:ny,angleDeg:getAngleDeg(nx,ny)};
-    PANEL[dragIdx].clock.value = angleToTime(markers[dragIdx].angleDeg);
+    if(!isDragging || dragIndex === null) return;
+    let {x, y} = getCanvasXY(e.clientX, e.clientY);
+    if(!isInsideClockFace(x, y)) return;
+    clicks[dragIndex] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    updateClockPosFromMarker(dragIndex);
     drawClock();
   });
   window.addEventListener('mouseup', function(){
-    if(isDragging){ isDragging=false; dragIdx=null; canvas.style.cursor='grab'; updateFieldStates(); }
+    isDragging = false; dragIndex = null; canvas.style.cursor = 'grab';
   });
 
-  canvas.addEventListener('click', function(e){
-    if(isDragging) return;
-    if(!topOK()){
-      let topErrs = collectErrors().filter(e =>
-        e.includes('Administrator')||e.includes('Participant')||
-        e.includes('Emotion')||e.includes('Modality')||
-        e.includes('Session Type')||e.includes('Hours')||e.includes('Date')
-      );
-      showPopup(topErrs.length ? topErrs : ['Complete all top fields first']);
-      return;
+  // ── Drag — touch ─────────────────────────────────────────────────────────
+  // Track whether a touchstart began on a marker (for tap-to-place vs drag)
+  let touchStartedOnMarker = false;
+
+  canvas.addEventListener('touchstart', function(e){
+    let t   = e.changedTouches[0];
+    let idx = getMarkerIndexAt(t.clientX, t.clientY);
+    if(idx !== -1){
+      e.preventDefault();
+      isDragging = true; dragIndex = idx; touchStartedOnMarker = true;
+    } else {
+      touchStartedOnMarker = false;
     }
-    const rect = canvas.getBoundingClientRect();
-    let x=(e.clientX-rect.left)*(canvas.width/rect.width);
-    let y=(e.clientY-rect.top)*(canvas.height/rect.height);
-    if(Math.hypot(x-CX,y-CY)>R || Math.hypot(x-CX,y-CY)<40) return;
-    if(markerAt(e.clientX,e.clientY)!==-1) return;
-    let slot = nextSlot();
-    if(slot===null){
-      let errs = collectErrors();
-      if(errs.length) showPopup(errs);
-      else { dynamicHint.innerText='❗ All markers already placed'; setTimeout(updateHint,2000); }
-      return;
-    }
-    if(!validPos(x,y,slot)) return;
-    placeMarker(x,y,slot);
-  });
+  }, { passive: false });
 
-  // ── Hint ──────────────────────────────────────────────────────
-  function updateHint(){
-    if(!topOK()){ dynamicHint.innerText='⚠️ Complete all top fields (Hours must be positive)'; return; }
-    if(!markers[0]){ dynamicHint.innerText='✅ Click clock to place BEFORE marker'; return; }
-    if(!panelOK(0)){ dynamicHint.innerText='🔘 Fill BEFORE fields'; return; }
-    if(blBeforeOn&&!markers[2]){ dynamicHint.innerText='✅ Click clock to place BEFORE-BL marker'; return; }
-    if(blBeforeOn&&!panelOK(2)){ dynamicHint.innerText='🔘 Fill BEFORE-BL fields'; return; }
-    if(!markers[1]){ dynamicHint.innerText='✅ Click clock to place AFTER marker'; return; }
-    if(!panelOK(1)){ dynamicHint.innerText='📝 Fill AFTER fields'; return; }
-    if(blAfterOn&&!markers[3]){ dynamicHint.innerText='✅ Click clock to place AFTER-BL marker'; return; }
-    if(blAfterOn&&!panelOK(3)){ dynamicHint.innerText='📝 Fill AFTER-BL fields'; return; }
-    dynamicHint.innerText='✔ Ready to download';
-  }
+  canvas.addEventListener('touchmove', function(e){
+    if(!isDragging || dragIndex === null) return;
+    e.preventDefault();
+    let t      = e.changedTouches[0];
+    let {x, y} = getCanvasXY(t.clientX, t.clientY);
+    if(!isInsideClockFace(x, y)) return;
+    clicks[dragIndex] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    updateClockPosFromMarker(dragIndex);
+    drawClock();
+  }, { passive: false });
 
-  // ── Bi-location checkboxes ────────────────────────────────────
-  function clearPanel(idx){
-    let p = PANEL[idx];
-    if(p.suds) p.suds.value='';
-    p.dist.value=''; p.spread.value=''; p.eyeLvl.value='';
-    p.eyePos.value='Level'; p.clock.value='';
-    markers[idx]=null;
-  }
+  canvas.addEventListener('touchend', function(e){
+    let wasDragging = isDragging;
+    isDragging = false; dragIndex = null;
 
-  blBeforeChk.addEventListener('change', function(){
-    blBeforeOn = this.checked;
-    $('panel-before-bl').style.display = this.checked ? 'block' : 'none';
-    if(!this.checked) clearPanel(2);
-    drawClock(); updateFieldStates();
-  });
-  blAfterChk.addEventListener('change', function(){
-    blAfterOn = this.checked;
-    $('panel-after-bl').style.display = this.checked ? 'block' : 'none';
-    if(!this.checked) clearPanel(3);
-    drawClock(); updateFieldStates();
-  });
-
-  // ── Eye-level toggles ─────────────────────────────────────────
-  for(let i=0;i<4;i++){
-    (function(idx){
-      PANEL[idx].eyePos.addEventListener('change', function(){
-        PANEL[idx].eyeLvl.disabled = (this.value==='Level') || PANEL[idx].eyePos.disabled;
-        if(this.value==='Level') PANEL[idx].eyeLvl.value=0;
-        updateFieldStates();
-      });
-    })(i);
-  }
-
-  // ── SUDS — live popup on bad value ────────────────────────────
-  [0,1].forEach(idx => {
-    PANEL[idx].suds.addEventListener('change', function(){
-      let v = parseInt(this.value);
-      if(this.value && (isNaN(v)||v<1||v>10)){
-        showPopup(['Feeling Level must be between 1 and 10']);
-        this.value='';
+    // If the touch did NOT start on a marker, treat it as a tap to place
+    if(!touchStartedOnMarker){
+      let t      = e.changedTouches[0];
+      let {x, y} = getCanvasXY(t.clientX, t.clientY);
+      if(!isInsideClockFace(x, y)) return;
+      if(!topComplete()){
+        showPopup('Please complete all top fields first (Hours must be greater than 0).');
+        return;
       }
-      updateFieldStates();
-    });
+      if(clicks.length === 0){
+        addMarker(x, y, 0);
+      } else if(clicks.length === 1 && isBeforeComplete()){
+        addMarker(x, y, 1);
+      } else if(clicks.length === 1 && !isBeforeComplete()){
+        dynamicHint.innerText = '❗ Complete BEFORE fields first';
+        setTimeout(updateHint, 1500);
+      }
+    }
+    touchStartedOnMarker = false;
+  }, { passive: false });
+
+  // ── Validation ─────────────────────────────────────────────────────────────
+  function topComplete(){
+    if(!document.getElementById('therapistNumber').value.trim()) return false;
+    if(!document.getElementById('participantNumber').value.trim()) return false;
+    if(!document.getElementById('issueName').value.trim()) return false;
+    if(!document.getElementById('modality').value.trim()) return false;
+    if(!document.getElementById('sessionType').value) return false;
+    let hrs = parseFloat(hoursInput.value);
+    if(isNaN(hrs) || hrs <= 0) return false;
+    if(!document.getElementById('sessionDate').value.trim()) return false;
+    return true;
+  }
+
+  function isBeforeComplete(){
+    if(!clicks[0]) return false;
+    let suds = parseInt(startSudsInput.value);
+    if(isNaN(suds) || suds < 1 || suds > 10) return false;
+    if(startDistance.value.trim() === '' || parseFloat(startDistance.value) < 0) return false;
+    let spread = parseFloat(startSpreadInput.value);
+    if(isNaN(spread) || spread < 0 || spread > 360) return false;
+    if(startEyePos.value !== 'LEVEL' && (!startEyeLevel.value.trim() || parseFloat(startEyeLevel.value) < 0)) return false;
+    if(startEyePos.value === 'LEVEL') startEyeLevel.value = 0;
+    return true;
+  }
+
+  function isAfterComplete(){
+    if(!clicks[1]) return false;
+    let suds = parseInt(endSudsInput.value);
+    if(isNaN(suds) || suds < 1 || suds > 10) return false;
+    if(endDistance.value.trim() === '' || parseFloat(endDistance.value) < 0) return false;
+    let spread = parseFloat(endSpreadInput.value);
+    if(isNaN(spread) || spread < 0 || spread > 360) return false;
+    if(endEyePos.value !== 'LEVEL' && (!endEyeLevel.value.trim() || parseFloat(endEyeLevel.value) < 0)) return false;
+    if(endEyePos.value === 'LEVEL') endEyeLevel.value = 0;
+    return true;
+  }
+
+  function updateFieldStates(){
+    let hasBefore = !!clicks[0];
+    let hasAfter  = !!clicks[1];
+
+    startSudsInput.disabled   = !hasBefore;
+    startDistance.disabled    = !hasBefore;
+    startSpreadInput.disabled = !hasBefore;
+    startEyePos.disabled      = !hasBefore;
+    startEyeLevel.disabled    = !hasBefore || startEyePos.value === 'LEVEL';
+    startClockPos.disabled    = !hasBefore;
+
+    endSudsInput.disabled     = !hasAfter;
+    endDistance.disabled      = !hasAfter;
+    endSpreadInput.disabled   = !hasAfter;
+    endEyePos.disabled        = !hasAfter;
+    endEyeLevel.disabled      = !hasAfter || endEyePos.value === 'LEVEL';
+    endClockPos.disabled      = !hasAfter;
+
+    downloadBtn.disabled = !(topComplete() && isBeforeComplete() && isAfterComplete());
+    updateHint();
+  }
+
+  function updateHint(){
+    if(!topComplete())
+      dynamicHint.innerText = "⚠️ Complete all top fields";
+    else if(clicks.length === 0)
+      dynamicHint.innerText = "✅ Click clock to place BEFORE marker";
+    else if(clicks.length === 1 && !isBeforeComplete())
+      dynamicHint.innerText = "🔘 Fill BEFORE fields (incl. Spread 0-360)";
+    else if(clicks.length === 1 && isBeforeComplete())
+      dynamicHint.innerText = "✅ Click clock to place AFTER marker";
+    else if(clicks.length === 2 && !isAfterComplete())
+      dynamicHint.innerText = "📝 Fill AFTER fields (incl. Spread)";
+    else
+      dynamicHint.innerText = "✔ Ready to download";
+  }
+
+  // ── Field event listeners ─────────────────────────────────────────────────
+  startSpreadInput.addEventListener('input', function(){ drawClock(); updateFieldStates(); });
+  endSpreadInput.addEventListener('input',   function(){ drawClock(); updateFieldStates(); });
+  [startEyeLevel, endEyeLevel].forEach(function(el){
+    el.addEventListener('input', updateFieldStates);
+  });
+  // Redraw clock when distance changes; if zero, snap marker to centre
+  startDistance.addEventListener('input', function(){
+    if(clicks[0] && parseFloat(this.value) === 0){
+      // Snap to centre but preserve the existing angleDeg so clock position is unchanged
+      clicks[0].x = centerX; clicks[0].y = centerY;
+      // Do NOT call updateClockPosFromMarker — angle is meaningless at origin
+    }
+    drawClock(); updateFieldStates();
+  });
+  endDistance.addEventListener('input', function(){
+    if(clicks[1] && parseFloat(this.value) === 0){
+      clicks[1].x = centerX; clicks[1].y = centerY;
+    }
+    drawClock(); updateFieldStates();
   });
 
-  // ── Hours — live popup on bad value ───────────────────────────
+  // Clock position fields: typing a valid hh:mm moves the marker
+  startClockPos.addEventListener('change', function(){
+    if(clicks[0]) updateMarkerFromClockPos(0, this.value);
+  });
+  endClockPos.addEventListener('change', function(){
+    if(clicks[1]) updateMarkerFromClockPos(1, this.value);
+  });
+
+  startEyePos.addEventListener('change', function(){
+    if(this.value === 'LEVEL'){ startEyeLevel.value = 0; startEyeLevel.disabled = true; }
+    else { startEyeLevel.value = ''; startEyeLevel.disabled = false; }
+    updateFieldStates();
+  });
+  endEyePos.addEventListener('change', function(){
+    if(this.value === 'LEVEL'){ endEyeLevel.value = 0; endEyeLevel.disabled = true; }
+    else { endEyeLevel.value = ''; endEyeLevel.disabled = false; }
+    updateFieldStates();
+  });
+
+  startSudsInput.addEventListener('change', function(){
+    let v = parseInt(this.value);
+    if(v >= 1 && v <= 10){ startSudsVal = v; }
+    else { if(this.value) showPopup('Feeling Level must be between 1 and 10.'); this.value = ''; }
+    updateFieldStates();
+  });
+  endSudsInput.addEventListener('change', function(){
+    let v = parseInt(this.value);
+    if(v >= 1 && v <= 10){ endSudsVal = v; }
+    else { if(this.value) showPopup('Feeling Level must be between 1 and 10.'); this.value = ''; }
+    updateFieldStates();
+  });
+
+  // Hours: allow only digits and a single decimal point
+  hoursInput.addEventListener('keydown', function(e){
+    let allowed = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
+    if(allowed.includes(e.key)) return;
+    if(e.key === '.' && !this.value.includes('.')) return;
+    if(!/^[0-9]$/.test(e.key)) e.preventDefault();
+  });
+  hoursInput.addEventListener('input', function(){
+    // Strip anything that isn't a digit or single dot
+    let v = this.value.replace(/[^0-9.]/g, '');
+    let parts = v.split('.');
+    if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    this.value = v;
+    updateFieldStates();
+  });
   hoursInput.addEventListener('change', function(){
     let v = parseFloat(this.value);
-    if(this.value && (isNaN(v)||v<=0)){
-      showPopup(['Hours Used must be a positive number greater than 0']);
-      this.value='';
+    if(isNaN(v) || v <= 0){
+      showPopup('Hours must be a positive number (greater than 0).');
+      this.value = '';
     }
     updateFieldStates();
   });
-  hoursInput.addEventListener('input', function(){
-    if(this.value.startsWith('-')) this.value='';
-    let v = parseFloat(this.value);
-    if(!isNaN(v) && v<=0 && this.value!=='') this.value='';
+
+  ['therapistNumber','participantNumber','issueName','modality','sessionType','sessionDate'].forEach(function(id){
+    var el = document.getElementById(id);
+    el.addEventListener('input', updateFieldStates);
+    el.addEventListener('change', updateFieldStates);
   });
+  hoursInput.addEventListener('input', updateFieldStates);
 
-  // ── Live redraw on spread/distance/eyelevel ───────────────────
-  for(let i=0;i<4;i++){
-    PANEL[i].spread.addEventListener('input', function(){ drawClock(); updateFieldStates(); });
-    PANEL[i].dist.addEventListener('input', updateFieldStates);
-    PANEL[i].eyeLvl.addEventListener('input', updateFieldStates);
-  }
-
-  // ── Top fields → state update ─────────────────────────────────
-  ['therapistNumber','participantNumber','issueName','modality','sessionType','sessionDate'].forEach(id=>{
-    $(id).addEventListener('input', updateFieldStates);
-    $(id).addEventListener('change', updateFieldStates);
-  });
-
-  // ── Reset ─────────────────────────────────────────────────────
-  $('resetBtn').addEventListener('click', function(){
-    markers=[null,null,null,null];
-    for(let i=0;i<4;i++) clearPanel(i);
-    blBeforeChk.checked=false; blAfterChk.checked=false;
-    blBeforeOn=false; blAfterOn=false;
-    $('panel-before-bl').style.display='none';
-    $('panel-after-bl').style.display='none';
-    notesTA.value=''; updateWordCounter();
-    drawClock(); updateFieldStates();
-  });
-
-  // ── Word counter ──────────────────────────────────────────────
-  function countWords(s){ return s.trim() ? s.trim().split(/\s+/).length : 0; }
-  function updateWordCounter(){
-    let wc = countWords(notesTA.value);
-    $('wordCounter').innerHTML = `${wc} / 500 words`;
-    if(wc>500) notesTA.value = notesTA.value.trim().split(/\s+/).slice(0,500).join(' ');
-  }
-  notesTA.addEventListener('input', updateWordCounter);
-  updateWordCounter();
-
-  // ── CSV helper — always outputs all BL columns ────────────────
-  // Returns the field value if BL active, otherwise 'n/a'
-  function blVal(isActive, val){
-    return isActive ? (val || '') : 'n/a';
-  }
-
-  // ── Download ──────────────────────────────────────────────────
-  $('downloadBtn').addEventListener('click', async function(){
-    // If somehow button is clicked while disabled, show errors
-    if(downloadBtn.disabled){
-      let errs = collectErrors();
-      if(errs.length) showPopup(errs);
+  // ── Clock click ───────────────────────────────────────────────────────────
+  canvas.addEventListener('click', function(e){
+    if(isDragging) return;
+    if(!topComplete()){
+      showPopup('Please complete all top fields first (Hours must be greater than 0).');
       return;
     }
+    let {x, y} = getCanvasXY(e.clientX, e.clientY);
+    if(!isInsideClockFace(x, y)) return;
 
-    let prefix = `${$('therapistNumber').value}_${$('participantNumber').value}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}`;
+    if(clicks.length === 0){
+      addMarker(x, y, 0);
+    } else if(clicks.length === 1 && isBeforeComplete()){
+      addMarker(x, y, 1);
+    } else if(clicks.length === 1 && !isBeforeComplete()){
+      dynamicHint.innerText = '❗ Complete BEFORE fields first';
+      setTimeout(updateHint, 1500);
+    }
+  });
 
-    // Screenshot
+  // ── Reset ─────────────────────────────────────────────────────────────────
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    clicks = [];
+    [startSudsInput, startDistance, startSpreadInput, startEyeLevel, startClockPos,
+     endSudsInput, endDistance, endSpreadInput, endEyeLevel, endClockPos].forEach(function(el){ el.value = ''; });
+    startEyePos.value = 'LEVEL'; endEyePos.value = 'LEVEL';
+    startSudsVal = null; endSudsVal = null;
+    notesTextarea.value = '';
+    updateWordCounter();
+    drawClock();
+    updateFieldStates();
+  });
+
+  // ── Word counter ──────────────────────────────────────────────────────────
+  function countWords(str){ return str.trim() ? str.trim().split(/\s+/).length : 0; }
+  function updateWordCounter(){
+    let wc = countWords(notesTextarea.value);
+    let el = document.getElementById('wordCounter');
+    el.textContent = wc + ' / 500 words';
+    el.className = 'word-counter' + (wc > 490 ? ' warning' : '');
+    if(wc > 500) notesTextarea.value = notesTextarea.value.split(/\s+/).slice(0, 500).join(' ');
+  }
+  notesTextarea.addEventListener('input', updateWordCounter);
+
+  // ── Download ──────────────────────────────────────────────────────────────
+  document.getElementById('downloadBtn').addEventListener('click', async function(){
+    if(downloadBtn.disabled) return;
+    let prefix = `${document.getElementById('therapistNumber').value}_${document.getElementById('participantNumber').value}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}`;
     let shot = await html2canvas(document.body, {scale:2});
-    let lnk = document.createElement('a');
-    lnk.download = prefix+'_form.png'; lnk.href = shot.toDataURL(); lnk.click();
+    let link = document.createElement('a');
+    link.download = prefix + '_form.png'; link.href = shot.toDataURL(); link.click();
 
-    // CSV — fixed column structure regardless of BL state
-    // Headers
-    const hdr = [
-      'admin','participant','emotion','modality','sessType','hours','date',
-      'startSUDS','startPos','startDist','startSpread','startEyeL','startEyeP',
-      'endSUDS','endPos','endDist','endSpread','endEyeL','endEyeP',
-      'blBefore','blStartPos','blStartDist','blStartSpread','blStartEyeL','blStartEyeP',
-      'blAfter','blEndPos','blEndDist','blEndSpread','blEndEyeL','blEndEyeP',
-      'notes'
-    ].join(';');
-
-    let p = PANEL;
-    const row = [
-      // Top fields
-      $('therapistNumber').value,
-      $('participantNumber').value,
-      $('issueName').value,
-      $('modality').value,
-      $('sessionType').value,
+    let csvHeader = "admin;participant;emotion;modality;sessType;hours;date;startSUDS;startPos;startDist;startSpread;startEyeL;startEyeP;endSUDS;endPos;endDist;endSpread;endEyeL;endEyeP;notes\n";
+    let row = [
+      document.getElementById('therapistNumber').value,
+      document.getElementById('participantNumber').value,
+      document.getElementById('issueName').value,
+      document.getElementById('modality').value,
+      document.getElementById('sessionType').value,
       hoursInput.value,
-      $('sessionDate').value,
-      // Before
-      p[0].suds.value,
-      p[0].clock.value,
-      p[0].dist.value,
-      p[0].spread.value,
-      p[0].eyeLvl.value,
-      p[0].eyePos.value,
-      // After
-      p[1].suds.value,
-      p[1].clock.value,
-      p[1].dist.value,
-      p[1].spread.value,
-      p[1].eyeLvl.value,
-      p[1].eyePos.value,
-      // Before-BL: flag then 5 fields (n/a if not active)
-      blBeforeOn ? '1' : '0',
-      blVal(blBeforeOn, p[2].clock.value),
-      blVal(blBeforeOn, p[2].dist.value),
-      blVal(blBeforeOn, p[2].spread.value),
-      blVal(blBeforeOn, p[2].eyeLvl.value),
-      blVal(blBeforeOn, p[2].eyePos.value),
-      // After-BL: flag then 5 fields (n/a if not active)
-      blAfterOn ? '1' : '0',
-      blVal(blAfterOn, p[3].clock.value),
-      blVal(blAfterOn, p[3].dist.value),
-      blVal(blAfterOn, p[3].spread.value),
-      blVal(blAfterOn, p[3].eyeLvl.value),
-      blVal(blAfterOn, p[3].eyePos.value),
-      // Notes
-      notesTA.value.replace(/;/g,',')
+      document.getElementById('sessionDate').value,
+      startSudsInput.value, startClockPos.value, startDistance.value,
+      startSpreadInput.value, startEyeLevel.value, startEyePos.value,
+      endSudsInput.value, endClockPos.value, endDistance.value,
+      endSpreadInput.value, endEyeLevel.value, endEyePos.value,
+      notesTextarea.value.replace(/;/g, ',')
     ].join(';');
 
-    let blob = new Blob([hdr+'\n'+row], {type:'text/csv'});
+    let blob = new Blob([csvHeader + row], {type:'text/csv'});
     let a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = prefix+'_data.csv'; a.click();
+    a.href = URL.createObjectURL(blob); a.download = prefix + '_data.csv'; a.click();
     URL.revokeObjectURL(a.href);
   });
 
-  // ── Init ──────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────────────────
   let d = new Date();
-  $('sessionDate').value = `${d.getDate()} ${d.toLocaleString('default',{month:'short'})} ${d.getFullYear()}`.toUpperCase();
+  document.getElementById('sessionDate').value =
+    `${d.getDate()} ${d.toLocaleString('default',{month:'short'})} ${d.getFullYear()}`;
   drawClock();
   updateFieldStates();
+  updateWordCounter();
 
 })();
 </script>

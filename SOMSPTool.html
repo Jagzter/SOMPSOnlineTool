@@ -100,6 +100,7 @@
     </div>
 
 <!-- Top info fields -->
+
 <div class="info-fields">
   <div class="info-row row-3cols">
     <div><label>Admin Code</label><input type="text" id="therapistNumber"></div>
@@ -124,7 +125,7 @@
   <div class="canvas-input">
     <div class="canvas-input-title">BEFORE</div>
     <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="startSuds" min="1" max="10" disabled></div>
-    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="startClockPos" disabled placeholder="hh:mm"></div>
+    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="startClockPos" readonly placeholder="hh:mm"></div>
     <div class="distance-spread-row">
       <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="startDistance" min="0" disabled></div>
       <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="startSpread" min="0" max="360" step="1" disabled></div>
@@ -139,7 +140,7 @@
   <div class="canvas-input">
     <div class="canvas-input-title">AFTER</div>
     <div class="canvas-input-group"><label>Feeling Level (1-10):</label><input type="number" id="endSuds" min="1" max="10" disabled></div>
-    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="endClockPos" disabled placeholder="hh:mm"></div>
+    <div class="canvas-input-group"><label>Clock Position:</label><input type="text" id="endClockPos" readonly placeholder="hh:mm"></div>
     <div class="distance-spread-row">
       <div class="canvas-input-group"><label>Distance (m):</label><input type="number" id="endDistance" min="0" disabled></div>
       <div class="canvas-input-group"><label>Spread (0-360):</label><input type="number" id="endSpread" min="0" max="360" step="1" disabled></div>
@@ -323,7 +324,7 @@
 
     // filled wedge
     ctx.save();
-    ctx.globalAlpha = 0.4;
+    ctx.globalAlpha = 0.3;
     ctx.beginPath();
     ctx.moveTo(mx, my);
     for(let i = 0; i <= steps; i++){
@@ -487,8 +488,9 @@
       ctx.fill();
       ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.stroke();
 
-      // Outward-pointing chevron: direction from centre through the marker
-      let outAng  = Math.atan2(c.y - centerY, c.x - centerX);
+      // Outward-pointing chevron: use stored angleDeg (clock angle, 0°=12 o'clock, CW)
+      // converted to canvas radians, so it stays correct even when marker is at centre
+      let outAng  = (c.angleDeg - 90) * Math.PI / 180;
       let dotR    = 10;          // marker radius
       let chevLen = 9;           // length of each chevron arm
       let chevGap = 4;           // how far the chevron tip sits beyond the dot edge
@@ -599,7 +601,10 @@
     if(!isDragging || dragIndex === null) return;
     let {x, y} = getCanvasXY(e.clientX, e.clientY);
     if(!isInsideClockFace(x, y)) return;
-    clicks[dragIndex] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    let ang = (x === centerX && y === centerY)
+      ? clicks[dragIndex].angleDeg  // preserve angle when dragged to exact centre
+      : getAngleFromXY(x, y);
+    clicks[dragIndex] = { x: x, y: y, angleDeg: ang };
     updateClockPosFromMarker(dragIndex);
     drawClock();
   });
@@ -628,7 +633,10 @@
     let t      = e.changedTouches[0];
     let {x, y} = getCanvasXY(t.clientX, t.clientY);
     if(!isInsideClockFace(x, y)) return;
-    clicks[dragIndex] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    let ang = (x === centerX && y === centerY)
+      ? clicks[dragIndex].angleDeg
+      : getAngleFromXY(x, y);
+    clicks[dragIndex] = { x: x, y: y, angleDeg: ang };
     updateClockPosFromMarker(dragIndex);
     drawClock();
   }, { passive: false });
@@ -704,14 +712,16 @@
     startSpreadInput.disabled = !hasBefore;
     startEyePos.disabled      = !hasBefore;
     startEyeLevel.disabled    = !hasBefore || startEyePos.value === 'LEVEL';
-    startClockPos.disabled    = !hasBefore;
+    startClockPos.readOnly    = !hasBefore;
+    startClockPos.style.background = hasBefore ? '' : '#eee';
 
     endSudsInput.disabled     = !hasAfter;
     endDistance.disabled      = !hasAfter;
     endSpreadInput.disabled   = !hasAfter;
     endEyePos.disabled        = !hasAfter;
     endEyeLevel.disabled      = !hasAfter || endEyePos.value === 'LEVEL';
-    endClockPos.disabled      = !hasAfter;
+    endClockPos.readOnly      = !hasAfter;
+    endClockPos.style.background = hasAfter ? '' : '#eee';
 
     downloadBtn.disabled = !(topComplete() && isBeforeComplete() && isAfterComplete());
     updateHint();
@@ -738,19 +748,24 @@
   [startEyeLevel, endEyeLevel].forEach(function(el){
     el.addEventListener('input', updateFieldStates);
   });
-  // Redraw clock when distance changes; if zero, snap marker to centre
+  // Redraw clock when distance changes; if zero, snap marker to centre.
+  // Preserve angleDeg by reading it from the clock position field so the
+  // displayed time is never lost, even if the marker was originally placed at centre.
+  function snapToCentre(index){
+    if(!clicks[index]) return;
+    // Preserve the current angleDeg exactly — just move x/y to centre
+    let preserved = clicks[index].angleDeg;
+    clicks[index] = { x: centerX, y: centerY, angleDeg: preserved };
+    // Write the preserved angle back to the clock pos field so it shows correctly
+    updateClockPosFromMarker(index);
+  }
+
   startDistance.addEventListener('input', function(){
-    if(clicks[0] && parseFloat(this.value) === 0){
-      // Snap to centre but preserve the existing angleDeg so clock position is unchanged
-      clicks[0].x = centerX; clicks[0].y = centerY;
-      // Do NOT call updateClockPosFromMarker — angle is meaningless at origin
-    }
+    if(clicks[0] && parseFloat(this.value) === 0) snapToCentre(0);
     drawClock(); updateFieldStates();
   });
   endDistance.addEventListener('input', function(){
-    if(clicks[1] && parseFloat(this.value) === 0){
-      clicks[1].x = centerX; clicks[1].y = centerY;
-    }
+    if(clicks[1] && parseFloat(this.value) === 0) snapToCentre(1);
     drawClock(); updateFieldStates();
   });
 

@@ -21,7 +21,6 @@
   .canvas-input-group label { font-size: 0.75rem; display: block; margin-bottom: 3px; }
   .canvas-input label { font-size: 0.9rem; }
 
-  /* CHANGE 1: uppercase display on all text/number inputs */
   input[type="text"],
   input[type="number"] { text-transform: uppercase; }
 
@@ -33,7 +32,6 @@
     line-height: 1.4;
     border: 1px solid #ccc;
     border-radius: 3px;
-    /* Prevent iOS from shrinking inputs */
     -webkit-appearance: none;
     appearance: none;
   }
@@ -43,16 +41,13 @@
   .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
   .info-row.row-4cols { grid-template-columns: 1.2fr 0.95fr 0.65fr 1fr; }
   @media (max-width: 520px) {
-    /* 3-col stays as-is — three equal columns fits fine on mobile */
     .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
-    /* 4-col breaks into 2 rows of 2 on mobile */
     .info-row.row-4cols { grid-template-columns: repeat(2,1fr); }
   }
   .info-fields label { font-size: 0.82rem; display: block; margin-bottom: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .info-row > div { display: flex; flex-direction: column; justify-content: flex-end; }
   .eye-row { display: flex; gap: 8px; align-items: center; }
 
-  /* CHANGE 3: hint sits BELOW the clock */
   .click-hint { background: #fff3cd; padding: 8px 12px; border-radius: 20px; text-align: center; margin-bottom: 10px; max-width: 500px; width: 100%; }
 
   .notes-container {
@@ -65,7 +60,6 @@
   .word-counter { text-align: right; font-size: 0.75rem; color: #666; margin-top: 5px; }
   .word-counter.warning { color: #d9534f; font-weight: bold; }
 
-  /* CHANGE 4: dismissible popup */
   #popupOverlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.5); display: none;
@@ -90,8 +84,15 @@
     white-space: nowrap; transform: translateX(-50%);
   }
 
-.logo-container { text-align: center; margin-bottom: 16px; }
-.logo-container img { max-width: 440px; width: 100%; height: auto; }
+  /* Rotation hint badge */
+  .rotate-hint {
+    position: absolute; font-size: 11px; background: rgba(0,0,0,0.65);
+    color: #fff; border-radius: 10px; padding: 2px 7px;
+    white-space: nowrap; pointer-events: none; transform: translateX(-50%);
+  }
+
+  .logo-container { text-align: center; margin-bottom: 16px; }
+  .logo-container img { max-width: 440px; width: 100%; height: auto; }
 </style>
 </head>
 <body>
@@ -115,7 +116,6 @@
   </div>
 </div>
 
-<!-- CHANGE 3: clock first, hint below -->
 <div id="clockContainer">
   <canvas id="clockCanvas" width="500" height="500"></canvas>
 </div>
@@ -165,7 +165,6 @@
   <button id="resetBtn">Reset</button>
 </div>
 
-<!-- CHANGE 4: single dismissible popup for all errors -->
 <div id="popupOverlay">
   <div id="popupBox">
     <div id="popupMsg"></div>
@@ -177,7 +176,7 @@
 <script>
 (function(){
 
-  // ── CHANGE 4: popup helper replaces all alert() calls ─────────────────────
+  // ── Popup ─────────────────────────────────────────────────────────────────
   const popupOverlay = document.getElementById('popupOverlay');
   const popupMsg     = document.getElementById('popupMsg');
   document.getElementById('popupClose').addEventListener('click', function(){
@@ -192,9 +191,19 @@
   const canvas  = document.getElementById('clockCanvas');
   const ctx     = canvas.getContext('2d');
   const centerX = 250, centerY = 250, radius = 200;
+
+  // Each click: { x, y, angleDeg, facingDeg }
+  //   angleDeg  = clock position (0=12 o'clock, CW) — drives the hh:mm field
+  //   facingDeg = independent face orientation (0=12 o'clock, CW) — drives chevron+eyes
   let clicks = [];
   let startSudsVal = null, endSudsVal = null;
-  let isDragging = false, dragIndex = null;
+
+  // Drag state — mode: 'move' | 'rotate'
+  let isDragging        = false;
+  let dragIndex         = null;
+  let dragMode          = 'move';   // 'move' or 'rotate'
+  let rotateDragActive  = false;    // true once rotation ring drag begins
+  let didDrag           = false;    // true if pointer actually moved during a drag — suppresses click
 
   // ── Input references ───────────────────────────────────────────────────────
   const startSpreadInput = document.getElementById('startSpread');
@@ -214,10 +223,9 @@
   const dynamicHint      = document.getElementById('dynamicHint');
   const notesTextarea    = document.getElementById('notes');
 
-  // ── CHANGE 1: uppercase enforcement on all text inputs ────────────────────
+  // ── Uppercase text inputs ─────────────────────────────────────────────────
   document.querySelectorAll('input[type="text"]').forEach(function(inp){
     inp.addEventListener('input', function(){
-      // Clock position fields use hh:mm format — skip uppercase for them
       if(this.id === 'startClockPos' || this.id === 'endClockPos') return;
       var pos = this.selectionStart;
       this.value = this.value.toUpperCase();
@@ -225,7 +233,7 @@
     });
   });
 
-  // ── CHANGE 2: block negative values on all numeric inputs ─────────────────
+  // ── Block negative values ─────────────────────────────────────────────────
   document.querySelectorAll('input[type="number"]').forEach(function(inp){
     inp.addEventListener('keydown', function(e){
       if(e.key === '-' || e.key === 'e' || e.key === 'E') e.preventDefault();
@@ -252,77 +260,77 @@
     else            endClockPos.value   = str;
   }
 
-  // Parse a typed hh:mm value and move the corresponding marker to that clock position.
-  // The marker keeps its current distance from centre; only the angle changes.
   function updateMarkerFromClockPos(index, timeStr){
     let str = timeStr.trim();
-
-    // Auto-format bare 3-4 digit numbers into hh:mm (e.g. "0100" -> "01:00", "700" -> "07:00")
     if(/^\d{3,4}$/.test(str)){
-      str = str.padStart(4, '0');          // ensure 4 digits
+      str = str.padStart(4, '0');
       str = str.slice(0, 2) + ':' + str.slice(2);
     }
-
     let match = str.match(/^(\d{1,2}):(\d{2})$/);
-    if(!match){
-      showPopup('Clock position must be in hh:mm format (e.g. 12:00 to 11:59).');
-      updateClockPosFromMarker(index);
-      return;
-    }
+    if(!match){ showPopup('Clock position must be in hh:mm format (e.g. 12:00 to 11:59).'); updateClockPosFromMarker(index); return; }
     let hour = parseInt(match[1]);
     let min  = parseInt(match[2]);
-    let valid = (hour >= 1 && hour <= 12) && (min >= 0 && min <= 59);
-    if(!valid){
-      showPopup('Clock position must be between 12:00 and 11:59.');
-      updateClockPosFromMarker(index);
-      return;
-    }
-    // Update the field to show the formatted value
+    if(!((hour >= 1 && hour <= 12) && (min >= 0 && min <= 59))){ showPopup('Clock position must be between 12:00 and 11:59.'); updateClockPosFromMarker(index); return; }
     let inp = index === 0 ? startClockPos : endClockPos;
     inp.value = str;
-
     if(hour === 12) hour = 0;
     let totalMin  = hour * 60 + min;
     let angleDeg  = (totalMin / 720) * 360;
     let canvasAng = (angleDeg - 90 + 360) % 360;
     let canvasRad = canvasAng * Math.PI / 180;
-    let dist = clicks[index]
-      ? Math.hypot(clicks[index].x - centerX, clicks[index].y - centerY)
-      : radius * 0.75;
+    let dist = clicks[index] ? Math.hypot(clicks[index].x - centerX, clicks[index].y - centerY) : radius * 0.75;
     let newX = centerX + Math.cos(canvasRad) * dist;
     let newY = centerY + Math.sin(canvasRad) * dist;
-    clicks[index] = { x: newX, y: newY, angleDeg: angleDeg };
+    // Preserve facingDeg when clock position is typed
+    let facingDeg = clicks[index] ? clicks[index].facingDeg : angleDeg;
+    clicks[index] = { x: newX, y: newY, angleDeg: angleDeg, facingDeg: facingDeg };
     drawClock();
     updateFieldStates();
   }
 
-  // ── Spread wedge ──────────────────────────────────────────────────────────
-  // For each ray direction, compute the exact distance from the marker (mx,my)
-  // to the clock face circle boundary and draw the fan out to that edge.
+  // ── Rotation ring hit-test ────────────────────────────────────────────────
+  // Head radius = 13px. Ring band = 15–42px from marker centre.
+  // 27px-wide annulus gives a comfortable grab target for rotation.
+  const RING_INNER = 15, RING_OUTER = 42;
+
+  function getRotateRingIndexAt(cx, cy){
+    for(let i = clicks.length - 1; i >= 0; i--){
+      if(!clicks[i]) continue;
+      let d = Math.hypot(cx - clicks[i].x, cy - clicks[i].y);
+      if(d >= RING_INNER && d <= RING_OUTER) return i;
+    }
+    return -1;
+  }
+
+  function getMarkerBodyIndexAt(cx, cy){
+    for(let i = clicks.length - 1; i >= 0; i--){
+      if(!clicks[i]) continue;
+      if(Math.hypot(cx - clicks[i].x, cy - clicks[i].y) < RING_INNER) return i;
+    }
+    return -1;
+  }
+
+  // ── Draw helpers ──────────────────────────────────────────────────────────
   function rayToCircleEdge(mx, my, ang){
-    // Ray: P = (mx,my) + t*(cos(ang),sin(ang))
-    // Circle: (P.x - cx)^2 + (P.y - cy)^2 = r^2
-    // Solve quadratic: t^2 + 2*(dx*cos+dy*sin)*t + (dx^2+dy^2-r^2) = 0
     let dx = mx - centerX, dy = my - centerY;
-    let cosA = Math.cos(ang), sinA = Math.sin(ang);
-    let b = dx * cosA + dy * sinA;          // half of linear term
+    let cosA = Math.cos(ang);
+    let b = dx * cosA + dy * Math.sin(ang);
     let c = dx * dx + dy * dy - radius * radius;
     let disc = b * b - c;
     if(disc < 0) return 0;
-    let t = -b + Math.sqrt(disc);           // positive root = forward intersection
-    return Math.max(0, t);
+    return Math.max(0, -b + Math.sqrt(disc));
   }
 
-  function drawSpreadArcFromMarker(mx, my, angleDeg, spreadDeg, color){
+  function drawSpreadArcFromMarker(mx, my, facingDeg, spreadDeg, color){
     if(spreadDeg <= 0) return;
-    let dx           = mx - centerX, dy = my - centerY;
-    let outwardAngle = Math.atan2(dy, dx);
+    // outwardAngle follows the nose (facingDeg), not the clock-centre direction.
+    // facingDeg 0° = 12 o'clock = canvas -90°, clockwise.
+    let outwardAngle = (facingDeg - 90) * Math.PI / 180;
     let halfSpread   = (spreadDeg * Math.PI / 180) / 2;
     let startAng     = outwardAngle - halfSpread;
     let endAng       = outwardAngle + halfSpread;
     let steps        = Math.max(16, Math.floor(spreadDeg / 5));
 
-    // filled wedge
     ctx.save();
     ctx.globalAlpha = 0.3;
     ctx.beginPath();
@@ -338,62 +346,168 @@
     ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
     ctx.restore();
 
-    // double-sided arc arrow at 2/3 along the centre ray
     let midT = rayToCircleEdge(mx, my, outwardAngle);
     let arcR = midT * (2 / 3);
     if(arcR < 6) return;
 
     ctx.save();
     ctx.globalAlpha = 1.0;
-    ctx.strokeStyle = color;
-    ctx.fillStyle   = color;
-    ctx.lineWidth   = 2;
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(mx, my, arcR, startAng, endAng); ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(mx, my, arcR, startAng, endAng);
-    ctx.stroke();
-
-    // Arrowhead: tip points OUTWARD (away from wedge centre).
-    // tipAng = angle on arc where the arrowhead sits.
-    // The tangent at tipAng is perpendicular to the radius: tanAng = tipAng ± PI/2.
-    // "Outward" means away from outwardAngle, so:
-    //   at startAng the outward tangent points in the -PI/2 direction (decreasing angle)
-    //   at endAng   the outward tangent points in the +PI/2 direction (increasing angle)
-    // Wings sit INSIDE the wedge (back along the arc toward outwardAngle).
     function arrowHead(tipAng, outwardTanAng){
       let headLen = Math.min(10, arcR * 0.35);
       let tipX = mx + Math.cos(tipAng) * arcR;
       let tipY = my + Math.sin(tipAng) * arcR;
       let wingAng = Math.PI / 7;
-      // Wings go in the opposite direction to the tip (inward, toward wedge centre)
       ctx.beginPath();
       ctx.moveTo(tipX, tipY);
-      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI - wingAng) * headLen,
-                 tipY + Math.sin(outwardTanAng + Math.PI - wingAng) * headLen);
-      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI + wingAng) * headLen,
-                 tipY + Math.sin(outwardTanAng + Math.PI + wingAng) * headLen);
-      ctx.closePath();
-      ctx.fill();
+      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI - wingAng) * headLen, tipY + Math.sin(outwardTanAng + Math.PI - wingAng) * headLen);
+      ctx.lineTo(tipX + Math.cos(outwardTanAng + Math.PI + wingAng) * headLen, tipY + Math.sin(outwardTanAng + Math.PI + wingAng) * headLen);
+      ctx.closePath(); ctx.fill();
     }
-
-    // At startAng: outward tangent is in the -PI/2 direction (decreasing angle = away from wedge)
     arrowHead(startAng, startAng - Math.PI / 2);
-    // At endAng: outward tangent is in the +PI/2 direction (increasing angle = away from wedge)
     arrowHead(endAng,   endAng   + Math.PI / 2);
+
+    // ── Spread angle label — sits just outside arc, centred on outward direction
+    let labelR  = arcR + 14;   // a little beyond the arc
+    let labelX  = mx + Math.cos(outwardAngle) * labelR;
+    let labelY  = my + Math.sin(outwardAngle) * labelR;
+    let labelTxt = Math.round(spreadDeg) + '°';
+
+    ctx.save();
+    ctx.font         = 'bold 11px Arial';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    // White halo so text is legible against any background
+    ctx.strokeStyle  = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth    = 3;
+    ctx.lineJoin     = 'round';
+    ctx.strokeText(labelTxt, labelX, labelY);
+    ctx.fillStyle    = color;
+    ctx.fillText(labelTxt, labelX, labelY);
+    ctx.restore();
 
     ctx.restore();
   }
 
-  // ── Draw ──────────────────────────────────────────────────────────────────
+  // ── Draw a face marker ────────────────────────────────────────────────────
+  // facingDeg: 0 = nose points to 12 o'clock, clockwise
+  // The face has:
+  //   - filled circle (the head)
+  //   - rotation ring (dashed, slightly outside head)
+  //   - chevron "nose" pointing outward in facingDeg direction
+  //   - two eyes positioned symmetrically, behind the nose direction
+  function drawFaceMarker(c, color, isActive){
+    const mx = c.x, my = c.y;
+    // canvas angle: facingDeg 0° = up (12 o'clock)
+    // canvas 0° = right, so subtract 90°
+    const faceRad = (c.facingDeg - 90) * Math.PI / 180;
+
+    const dotR    = 13;   // head radius
+    const eyeOff  = 5.5;  // distance from centre to each eye
+    const eyeR    = 2.8;  // eye dot radius
+    const eyeLat  = 4.2;  // lateral (sideways) eye spread
+
+    // ── Rotation ring (dashed circle, drawn at mid-point of hit annulus) ──
+    // Mid = (RING_INNER + RING_OUTER) / 2 = (15+42)/2 = 28.5
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(mx, my, 28, 0, 2 * Math.PI);
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = isActive ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.35)';
+    ctx.lineWidth   = isActive ? 2.5 : 1.5;
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Head (filled circle) ──────────────────────────────────────────────
+    ctx.beginPath();
+    ctx.arc(mx, my, dotR, 0, 2 * Math.PI);
+    ctx.fillStyle   = color;
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth   = 1.5;
+    ctx.stroke();
+
+    // ── Chevron "nose" ────────────────────────────────────────────────────
+    const chevLen = 9;
+    const chevGap = 2;
+    const tipX    = mx + Math.cos(faceRad) * (dotR + chevGap + chevLen * 0.45);
+    const tipY    = my + Math.sin(faceRad) * (dotR + chevGap + chevLen * 0.45);
+    const wingAng = Math.PI / 5;
+    const w1x = tipX - Math.cos(faceRad - wingAng) * chevLen;
+    const w1y = tipY - Math.sin(faceRad - wingAng) * chevLen;
+    const w2x = tipX - Math.cos(faceRad + wingAng) * chevLen;
+    const w2y = tipY - Math.sin(faceRad + wingAng) * chevLen;
+
+    ctx.save();
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(w1x, w1y); ctx.lineTo(tipX, tipY); ctx.lineTo(w2x, w2y); ctx.stroke();
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(w1x, w1y); ctx.lineTo(tipX, tipY); ctx.lineTo(w2x, w2y); ctx.stroke();
+    ctx.restore();
+
+    // ── Eyes ──────────────────────────────────────────────────────────────
+    // Eyes sit "back" from the nose, offset symmetrically left and right
+    // relative to the facing direction.
+    // perpendicular: faceRad + PI/2 and faceRad - PI/2
+    // longitudinal:  opposite of faceRad (behind nose)
+
+    // Unit vectors
+    const nx =  Math.cos(faceRad);   // forward (nose direction)
+    const ny =  Math.sin(faceRad);
+    const rx =  Math.cos(faceRad + Math.PI / 2);  // right
+    const ry =  Math.sin(faceRad + Math.PI / 2);
+
+    // Eye centres: slightly behind midpoint, spread left/right
+    const eyeForward = eyeOff * 0.3;  // a little toward nose
+    const eyeCentreX = mx + nx * eyeForward;
+    const eyeCentreY = my + ny * eyeForward;
+
+    const eye1x = eyeCentreX - rx * eyeLat;
+    const eye1y = eyeCentreY - ry * eyeLat;
+    const eye2x = eyeCentreX + rx * eyeLat;
+    const eye2y = eyeCentreY + ry * eyeLat;
+
+    // White sclera
+    for(let [ex, ey] of [[eye1x, eye1y], [eye2x, eye2y]]){
+      ctx.beginPath();
+      ctx.arc(ex, ey, eyeR + 0.8, 0, 2 * Math.PI);
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fill();
+    }
+    // Dark pupil
+    for(let [ex, ey] of [[eye1x, eye1y], [eye2x, eye2y]]){
+      ctx.beginPath();
+      ctx.arc(ex, ey, eyeR, 0, 2 * Math.PI);
+      ctx.fillStyle = '#111';
+      ctx.fill();
+    }
+
+    // ── Rotate arc indicator (shown while actively rotating) ──────────────
+    if(isActive && dragMode === 'rotate'){
+      ctx.save();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth   = 2;
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath();
+      ctx.arc(mx, my, RING_OUTER + 4, faceRad - 0.4, faceRad + 0.4);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // ── Main draw ─────────────────────────────────────────────────────────────
   function drawClock(){
     ctx.clearRect(0, 0, 500, 500);
 
-    // Face
+    // Clock face
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
     ctx.strokeStyle = '#333'; ctx.lineWidth = 3; ctx.stroke();
 
-    // Hour positions
+    // Hour markers
     ctx.font = 'bold 16px Arial'; ctx.fillStyle = '#333';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for(let i = 1; i <= 12; i++){
@@ -401,139 +515,74 @@
       let x = centerX + Math.cos(angle) * (radius * 0.8);
       let y = centerY + Math.sin(angle) * (radius * 0.8);
       ctx.beginPath(); ctx.arc(x, y, 3, 0, 2 * Math.PI); ctx.fill();
-      ctx.fillText(i.toString(),
-        centerX + Math.cos(angle) * (radius * 0.92),
-        centerY + Math.sin(angle) * (radius * 0.92));
+      ctx.fillText(i.toString(), centerX + Math.cos(angle) * (radius * 0.92), centerY + Math.sin(angle) * (radius * 0.92));
     }
 
-    // Centre dot — drawn before markers so markers always appear on top
+    // Centre dot
     ctx.beginPath();
     ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
     ctx.fillStyle = 'magenta'; ctx.fill();
 
-    // Spread wedges — also drawn before markers
+    // Spread wedges — centred on facingDeg so the wedge always originates from the nose
     if(clicks[0] && !startSpreadInput.disabled){
       let s = parseFloat(startSpreadInput.value);
-      if(!isNaN(s) && s > 0)
-        drawSpreadArcFromMarker(clicks[0].x, clicks[0].y, clicks[0].angleDeg, s, '#FF5733');
+      if(!isNaN(s) && s > 0) drawSpreadArcFromMarker(clicks[0].x, clicks[0].y, clicks[0].facingDeg, s, '#FF5733');
     }
     if(clicks[1] && !endSpreadInput.disabled){
       let s = parseFloat(endSpreadInput.value);
-      if(!isNaN(s) && s > 0)
-        drawSpreadArcFromMarker(clicks[1].x, clicks[1].y, clicks[1].angleDeg, s, '#33FF57');
+      if(!isNaN(s) && s > 0) drawSpreadArcFromMarker(clicks[1].x, clicks[1].y, clicks[1].facingDeg, s, '#33FF57');
     }
 
-    // Distance lines — drawn before markers so dots sit on top
+    // Distance lines
     for(let i = 0; i < clicks.length; i++){
-      let c        = clicks[i];
-      let distInp  = i === 0 ? startDistance : endDistance;
-      let color    = i === 0 ? '#FF5733' : '#33FF57';
-      let distVal  = parseFloat(distInp.value);
+      let c = clicks[i];
+      let distInp = i === 0 ? startDistance : endDistance;
+      let color   = i === 0 ? '#FF5733' : '#33FF57';
+      let distVal = parseFloat(distInp.value);
       let distFromCentre = Math.hypot(c.x - centerX, c.y - centerY);
-
-      // Only draw when a distance has been entered and marker isn't on the centre dot
       if(!isNaN(distVal) && distVal > 0 && distFromCentre > 20){
         let outAng = Math.atan2(c.y - centerY, c.x - centerX);
-
-        // Dotted line from edge of centre dot (r=20) to edge of marker dot (r=10)
         let lineStartX = centerX + Math.cos(outAng) * 20;
         let lineStartY = centerY + Math.sin(outAng) * 20;
-        let lineEndX   = c.x - Math.cos(outAng) * 10;
-        let lineEndY   = c.y - Math.sin(outAng) * 10;
-
+        let lineEndX   = c.x - Math.cos(outAng) * 14;
+        let lineEndY   = c.y - Math.sin(outAng) * 14;
         ctx.save();
-        ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = color;
-        ctx.lineWidth   = 1.5;
-        ctx.globalAlpha = 0.85;
-        ctx.beginPath();
-        ctx.moveTo(lineStartX, lineStartY);
-        ctx.lineTo(lineEndX, lineEndY);
-        ctx.stroke();
+        ctx.setLineDash([4, 4]); ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.85;
+        ctx.beginPath(); ctx.moveTo(lineStartX, lineStartY); ctx.lineTo(lineEndX, lineEndY); ctx.stroke();
         ctx.restore();
-
-        // Distance label at midpoint of the line, offset perpendicular so it
-        // doesn't sit directly on the line
-        let midX    = (lineStartX + lineEndX) / 2;
-        let midY    = (lineStartY + lineEndY) / 2;
-        // Perpendicular offset (rotate outAng by 90°)
-        let perpX   = midX - Math.sin(outAng) * 12;
-        let perpY   = midY + Math.cos(outAng) * 12;
-        let label   = distVal + 'm';
-
+        let midX  = (lineStartX + lineEndX) / 2;
+        let midY  = (lineStartY + lineEndY) / 2;
+        let perpX = midX - Math.sin(outAng) * 12;
+        let perpY = midY + Math.cos(outAng) * 12;
         ctx.save();
-        ctx.font         = 'bold 11px Arial';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        // White halo for legibility
-        ctx.strokeStyle  = '#fff';
-        ctx.lineWidth    = 3;
-        ctx.strokeText(label, perpX, perpY);
-        ctx.fillStyle    = color;
-        ctx.fillText(label, perpX, perpY);
+        ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.strokeText(distVal + 'm', perpX, perpY);
+        ctx.fillStyle = color; ctx.fillText(distVal + 'm', perpX, perpY);
         ctx.restore();
       }
     }
 
-    // Markers drawn last so they always appear on top of everything.
-    // No exclusion zones — markers may overlap each other and the centre dot.
+    // Face markers — drawn on top of everything
     for(let i = 0; i < clicks.length; i++){
-      let c     = clicks[i];
-      let color = i === 0 ? '#FF5733' : '#33FF57';
-
-      // Dot
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, 10, 0, 2 * Math.PI);
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.strokeStyle = '#333'; ctx.lineWidth = 1.5; ctx.stroke();
-
-      // Outward-pointing chevron: use stored angleDeg (clock angle, 0°=12 o'clock, CW)
-      // converted to canvas radians, so it stays correct even when marker is at centre
-      let outAng  = (c.angleDeg - 90) * Math.PI / 180;
-      let dotR    = 10;          // marker radius
-      let chevLen = 9;           // length of each chevron arm
-      let chevGap = 4;           // how far the chevron tip sits beyond the dot edge
-      let tipX    = c.x + Math.cos(outAng) * (dotR + chevGap + chevLen * 0.45);
-      let tipY    = c.y + Math.sin(outAng) * (dotR + chevGap + chevLen * 0.45);
-      // Wings spread ±35° back from the tip
-      let wingAng = Math.PI / 5;
-      let w1x = tipX - Math.cos(outAng - wingAng) * chevLen;
-      let w1y = tipY - Math.sin(outAng - wingAng) * chevLen;
-      let w2x = tipX - Math.cos(outAng + wingAng) * chevLen;
-      let w2y = tipY - Math.sin(outAng + wingAng) * chevLen;
-
-      ctx.save();
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth   = 2.5;
-      ctx.lineJoin    = 'round';
-      ctx.lineCap     = 'round';
-      ctx.beginPath();
-      ctx.moveTo(w1x, w1y);
-      ctx.lineTo(tipX, tipY);
-      ctx.lineTo(w2x, w2y);
-      ctx.stroke();
-      // Draw again in black on top
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth   = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(w1x, w1y);
-      ctx.lineTo(tipX, tipY);
-      ctx.lineTo(w2x, w2y);
-      ctx.stroke();
-      ctx.restore();
+      let color    = i === 0 ? '#FF5733' : '#33FF57';
+      let isActive = isDragging && dragIndex === i;
+      drawFaceMarker(clicks[i], color, isActive);
     }
 
     updateLabelPositions();
   }
 
   // ── Floating labels ────────────────────────────────────────────────────────
-  const labelStart = document.createElement('div');
-  const labelEnd   = document.createElement('div');
+  const labelStart  = document.createElement('div');
+  const labelEnd    = document.createElement('div');
+  const rotateHint  = document.createElement('div');
   [labelStart, labelEnd].forEach(function(l){
     l.className = 'marker-label'; l.style.display = 'none';
     document.getElementById('clockContainer').appendChild(l);
   });
+  rotateHint.className = 'rotate-hint';
+  rotateHint.style.display = 'none';
+  document.getElementById('clockContainer').appendChild(rotateHint);
 
   function updateLabelPositions(){
     const cRect = document.getElementById('clockContainer').getBoundingClientRect();
@@ -544,14 +593,14 @@
     if(clicks[0]){
       labelStart.textContent = 'Before'; labelStart.style.color = '#FF5733';
       labelStart.style.left = (ox + clicks[0].x * sx) + 'px';
-      labelStart.style.top  = (oy + clicks[0].y * sy + 20) + 'px';
+      labelStart.style.top  = (oy + clicks[0].y * sy + 38) + 'px';
       labelStart.style.display = 'block';
     } else { labelStart.style.display = 'none'; }
 
     if(clicks[1]){
       labelEnd.textContent = 'After'; labelEnd.style.color = '#33FF57';
       labelEnd.style.left = (ox + clicks[1].x * sx) + 'px';
-      labelEnd.style.top  = (oy + clicks[1].y * sy + 20) + 'px';
+      labelEnd.style.top  = (oy + clicks[1].y * sy + 38) + 'px';
       labelEnd.style.display = 'block';
     } else { labelEnd.style.display = 'none'; }
   }
@@ -559,28 +608,15 @@
 
   // ── Marker helpers ─────────────────────────────────────────────────────────
   function addMarker(x, y, index){
-    clicks[index] = { x: x, y: y, angleDeg: getAngleFromXY(x, y) };
+    let angleDeg = getAngleFromXY(x, y);
+    clicks[index] = { x: x, y: y, angleDeg: angleDeg, facingDeg: angleDeg };
     updateClockPosFromMarker(index);
     drawClock();
     updateFieldStates();
   }
 
-  // CHANGE 5: only boundary check — inside the clock face circle.
-  // No minimum distance from centre, no exclusion around other markers.
   function isInsideClockFace(x, y){
     return Math.hypot(x - centerX, y - centerY) <= radius;
-  }
-
-  // Hit-test iterates in reverse so topmost (last-drawn) marker is picked first.
-  // Hit radius 26px canvas units to accommodate fat fingers on mobile.
-  function getMarkerIndexAt(clientX, clientY){
-    const rect = canvas.getBoundingClientRect();
-    const cx = (clientX - rect.left) * (canvas.width  / rect.width);
-    const cy = (clientY - rect.top)  * (canvas.height / rect.height);
-    for(let i = clicks.length - 1; i >= 0; i--){
-      if(clicks[i] && Math.hypot(cx - clicks[i].x, cy - clicks[i].y) <= 26) return i;
-    }
-    return -1;
   }
 
   function getCanvasXY(clientX, clientY){
@@ -591,62 +627,111 @@
     };
   }
 
-  // ── Drag — mouse ─────────────────────────────────────────────────────────
+  // ── Unified pointer-down handler ──────────────────────────────────────────
+  function onPointerDown(clientX, clientY){
+    let {x, y} = getCanvasXY(clientX, clientY);
+
+    // Test rotation ring first (outer), then body (inner)
+    let ringIdx = getRotateRingIndexAt(x, y);
+    let bodyIdx = getMarkerBodyIndexAt(x, y);
+
+    if(ringIdx !== -1){
+      isDragging = true; dragIndex = ringIdx; dragMode = 'rotate'; didDrag = false;
+      canvas.style.cursor = 'crosshair';
+      return 'ring';
+    } else if(bodyIdx !== -1){
+      isDragging = true; dragIndex = bodyIdx; dragMode = 'move'; didDrag = false;
+      canvas.style.cursor = 'grabbing';
+      return 'body';
+    }
+    return 'none';
+  }
+
+  // ── Unified pointer-move handler ─────────────────────────────────────────
+  function onPointerMove(clientX, clientY){
+    if(!isDragging || dragIndex === null) return;
+    let {x, y} = getCanvasXY(clientX, clientY);
+    didDrag = true;
+
+    if(dragMode === 'rotate'){
+      // Compute angle from marker centre to cursor → set facingDeg
+      let c = clicks[dragIndex];
+      let rawAng = Math.atan2(y - c.y, x - c.x) * 180 / Math.PI;
+      // Convert canvas angle to clock angle (0=up, CW)
+      let facingDeg = ((rawAng + 90) + 360) % 360;
+      clicks[dragIndex] = { x: c.x, y: c.y, angleDeg: c.angleDeg, facingDeg: facingDeg };
+      drawClock();
+    } else if(dragMode === 'move'){
+      if(!isInsideClockFace(x, y)) return;
+      let ang = (x === centerX && y === centerY) ? clicks[dragIndex].angleDeg : getAngleFromXY(x, y);
+      // Preserve facingDeg when moving
+      let facingDeg = clicks[dragIndex].facingDeg;
+      clicks[dragIndex] = { x: x, y: y, angleDeg: ang, facingDeg: facingDeg };
+      updateClockPosFromMarker(dragIndex);
+      drawClock();
+    }
+  }
+
+  // ── Unified pointer-up ────────────────────────────────────────────────────
+  function onPointerUp(){
+    isDragging = false; dragIndex = null; dragMode = 'move';
+    canvas.style.cursor = 'grab';
+    rotateHint.style.display = 'none';
+    drawClock();
+    // didDrag is intentionally NOT reset here — click handler reads it then resets
+  }
+
+  // ── Mouse events ──────────────────────────────────────────────────────────
   canvas.addEventListener('mousedown', function(e){
     e.preventDefault();
-    let idx = getMarkerIndexAt(e.clientX, e.clientY);
-    if(idx !== -1){ isDragging = true; dragIndex = idx; canvas.style.cursor = 'grabbing'; }
+    onPointerDown(e.clientX, e.clientY);
   });
   window.addEventListener('mousemove', function(e){
-    if(!isDragging || dragIndex === null) return;
-    let {x, y} = getCanvasXY(e.clientX, e.clientY);
-    if(!isInsideClockFace(x, y)) return;
-    let ang = (x === centerX && y === centerY)
-      ? clicks[dragIndex].angleDeg  // preserve angle when dragged to exact centre
-      : getAngleFromXY(x, y);
-    clicks[dragIndex] = { x: x, y: y, angleDeg: ang };
-    updateClockPosFromMarker(dragIndex);
-    drawClock();
+    onPointerMove(e.clientX, e.clientY);
+    // Update cursor based on hover zone (only when not mid-drag)
+    if(!isDragging){
+      let {x, y} = getCanvasXY(e.clientX, e.clientY);
+      let ringIdx = getRotateRingIndexAt(x, y);
+      let bodyIdx = getMarkerBodyIndexAt(x, y);
+      if(ringIdx !== -1)      canvas.style.cursor = 'crosshair';
+      else if(bodyIdx !== -1) canvas.style.cursor = 'grab';
+      else                    canvas.style.cursor = 'default';
+    }
   });
   window.addEventListener('mouseup', function(){
-    isDragging = false; dragIndex = null; canvas.style.cursor = 'grab';
+    onPointerUp();
   });
 
-  // ── Drag — touch ─────────────────────────────────────────────────────────
-  // Track whether a touchstart began on a marker (for tap-to-place vs drag)
+  // ── Touch events ──────────────────────────────────────────────────────────
   let touchStartedOnMarker = false;
+  let touchStartedMode     = 'none';
 
   canvas.addEventListener('touchstart', function(e){
     let t   = e.changedTouches[0];
-    let idx = getMarkerIndexAt(t.clientX, t.clientY);
-    if(idx !== -1){
+    let hit = onPointerDown(t.clientX, t.clientY);
+    if(hit !== 'none'){
       e.preventDefault();
-      isDragging = true; dragIndex = idx; touchStartedOnMarker = true;
+      touchStartedOnMarker = true;
+      touchStartedMode     = hit;
     } else {
       touchStartedOnMarker = false;
+      touchStartedMode     = 'none';
     }
   }, { passive: false });
 
   canvas.addEventListener('touchmove', function(e){
     if(!isDragging || dragIndex === null) return;
     e.preventDefault();
-    let t      = e.changedTouches[0];
-    let {x, y} = getCanvasXY(t.clientX, t.clientY);
-    if(!isInsideClockFace(x, y)) return;
-    let ang = (x === centerX && y === centerY)
-      ? clicks[dragIndex].angleDeg
-      : getAngleFromXY(x, y);
-    clicks[dragIndex] = { x: x, y: y, angleDeg: ang };
-    updateClockPosFromMarker(dragIndex);
-    drawClock();
+    let t = e.changedTouches[0];
+    onPointerMove(t.clientX, t.clientY);
   }, { passive: false });
 
   canvas.addEventListener('touchend', function(e){
-    let wasDragging = isDragging;
-    isDragging = false; dragIndex = null;
+    let wasOnMarker = touchStartedOnMarker;
+    onPointerUp();
 
-    // If the touch did NOT start on a marker, treat it as a tap to place
-    if(!touchStartedOnMarker){
+    if(!wasOnMarker){
+      // Tap to place
       let t      = e.changedTouches[0];
       let {x, y} = getCanvasXY(t.clientX, t.clientY);
       if(!isInsideClockFace(x, y)) return;
@@ -664,6 +749,7 @@
       }
     }
     touchStartedOnMarker = false;
+    touchStartedMode     = 'none';
   }, { passive: false });
 
   // ── Validation ─────────────────────────────────────────────────────────────
@@ -733,30 +819,25 @@
     else if(clicks.length === 0)
       dynamicHint.innerText = "✅ Click clock to place BEFORE marker";
     else if(clicks.length === 1 && !isBeforeComplete())
-      dynamicHint.innerText = "🔘 Fill BEFORE fields (incl. Spread 0-360)";
+      dynamicHint.innerText = "🔘 Fill BEFORE fields (incl. Spread 0-360) · Drag ring around face to rotate it";
     else if(clicks.length === 1 && isBeforeComplete())
-      dynamicHint.innerText = "✅ Click clock to place AFTER marker";
+      dynamicHint.innerText = "✅ Click clock to place AFTER marker · Drag ring around face to rotate it";
     else if(clicks.length === 2 && !isAfterComplete())
-      dynamicHint.innerText = "📝 Fill AFTER fields (incl. Spread)";
+      dynamicHint.innerText = "📝 Fill AFTER fields · Drag ring around either face to rotate it";
     else
-      dynamicHint.innerText = "✔ Ready to download";
+      dynamicHint.innerText = "✔ Ready to download · Drag rings to adjust face orientations";
   }
 
-  // ── Field event listeners ─────────────────────────────────────────────────
+  // ── Field listeners ───────────────────────────────────────────────────────
   startSpreadInput.addEventListener('input', function(){ drawClock(); updateFieldStates(); });
   endSpreadInput.addEventListener('input',   function(){ drawClock(); updateFieldStates(); });
-  [startEyeLevel, endEyeLevel].forEach(function(el){
-    el.addEventListener('input', updateFieldStates);
-  });
-  // Redraw clock when distance changes; if zero, snap marker to centre.
-  // Preserve angleDeg by reading it from the clock position field so the
-  // displayed time is never lost, even if the marker was originally placed at centre.
+  [startEyeLevel, endEyeLevel].forEach(function(el){ el.addEventListener('input', updateFieldStates); });
+
   function snapToCentre(index){
     if(!clicks[index]) return;
-    // Preserve the current angleDeg exactly — just move x/y to centre
-    let preserved = clicks[index].angleDeg;
-    clicks[index] = { x: centerX, y: centerY, angleDeg: preserved };
-    // Write the preserved angle back to the clock pos field so it shows correctly
+    let preserved   = clicks[index].angleDeg;
+    let facingDeg   = clicks[index].facingDeg;
+    clicks[index]   = { x: centerX, y: centerY, angleDeg: preserved, facingDeg: facingDeg };
     updateClockPosFromMarker(index);
   }
 
@@ -769,13 +850,8 @@
     drawClock(); updateFieldStates();
   });
 
-  // Clock position fields: typing a valid hh:mm moves the marker
-  startClockPos.addEventListener('change', function(){
-    if(clicks[0]) updateMarkerFromClockPos(0, this.value);
-  });
-  endClockPos.addEventListener('change', function(){
-    if(clicks[1]) updateMarkerFromClockPos(1, this.value);
-  });
+  startClockPos.addEventListener('change', function(){ if(clicks[0]) updateMarkerFromClockPos(0, this.value); });
+  endClockPos.addEventListener('change',   function(){ if(clicks[1]) updateMarkerFromClockPos(1, this.value); });
 
   startEyePos.addEventListener('change', function(){
     if(this.value === 'LEVEL'){ startEyeLevel.value = 0; startEyeLevel.disabled = true; }
@@ -801,7 +877,6 @@
     updateFieldStates();
   });
 
-  // Hours: allow only digits and a single decimal point
   hoursInput.addEventListener('keydown', function(e){
     let allowed = ['Backspace','Delete','Tab','ArrowLeft','ArrowRight','Home','End'];
     if(allowed.includes(e.key)) return;
@@ -809,7 +884,6 @@
     if(!/^[0-9]$/.test(e.key)) e.preventDefault();
   });
   hoursInput.addEventListener('input', function(){
-    // Strip anything that isn't a digit or single dot
     let v = this.value.replace(/[^0-9.]/g, '');
     let parts = v.split('.');
     if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
@@ -818,10 +892,7 @@
   });
   hoursInput.addEventListener('change', function(){
     let v = parseFloat(this.value);
-    if(isNaN(v) || v <= 0){
-      showPopup('Hours must be a positive number (greater than 0).');
-      this.value = '';
-    }
+    if(isNaN(v) || v <= 0){ showPopup('Hours must be a positive number (greater than 0).'); this.value = ''; }
     updateFieldStates();
   });
 
@@ -832,14 +903,20 @@
   });
   hoursInput.addEventListener('input', updateFieldStates);
 
-  // ── Clock click ───────────────────────────────────────────────────────────
+  // ── Clock click (tap-to-place, desktop) ───────────────────────────────────
   canvas.addEventListener('click', function(e){
-    if(isDragging) return;
+    // Suppress click if it was the end of a drag (move or rotate)
+    if(didDrag){ didDrag = false; return; }
+    didDrag = false;
+    // If click landed on a marker body or ring, don't place a new one
+    let {x, y} = getCanvasXY(e.clientX, e.clientY);
+    if(getMarkerBodyIndexAt(x, y) !== -1) return;
+    if(getRotateRingIndexAt(x, y) !== -1) return;
+
     if(!topComplete()){
       showPopup('Please complete all top fields first (Hours must be greater than 0).');
       return;
     }
-    let {x, y} = getCanvasXY(e.clientX, e.clientY);
     if(!isInsideClockFace(x, y)) return;
 
     if(clicks.length === 0){
@@ -884,7 +961,7 @@
     let link = document.createElement('a');
     link.download = prefix + '_form.png'; link.href = shot.toDataURL(); link.click();
 
-    let csvHeader = "admin;participant;emotion;modality;sessType;hours;date;startSUDS;startPos;startDist;startSpread;startEyeL;startEyeP;endSUDS;endPos;endDist;endSpread;endEyeL;endEyeP;notes\n";
+    let csvHeader = "admin;participant;emotion;modality;sessType;hours;date;startSUDS;startPos;startFacing;startDist;startSpread;startEyeL;startEyeP;endSUDS;endPos;endFacing;endDist;endSpread;endEyeL;endEyeP;notes\n";
     let row = [
       document.getElementById('therapistNumber').value,
       document.getElementById('participantNumber').value,
@@ -893,9 +970,15 @@
       document.getElementById('sessionType').value,
       hoursInput.value,
       document.getElementById('sessionDate').value,
-      startSudsInput.value, startClockPos.value, startDistance.value,
+      startSudsInput.value,
+      startClockPos.value,
+      clicks[0] ? Math.round(clicks[0].facingDeg) : '',
+      startDistance.value,
       startSpreadInput.value, startEyeLevel.value, startEyePos.value,
-      endSudsInput.value, endClockPos.value, endDistance.value,
+      endSudsInput.value,
+      endClockPos.value,
+      clicks[1] ? Math.round(clicks[1].facingDeg) : '',
+      endDistance.value,
       endSpreadInput.value, endEyeLevel.value, endEyePos.value,
       notesTextarea.value.replace(/;/g, ',')
     ].join(';');

@@ -36,10 +36,10 @@
   select { background: white; }
   .info-fields { background: white; padding: 15px; border-radius: 5px; margin-bottom: 20px; max-width: 520px; width: 100%; }
   .info-row { display: grid; gap: 10px; margin-bottom: 12px; }
-  .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
-  .info-row.row-4cols { grid-template-columns: 1.2fr 0.95fr 0.65fr 1fr; }
+  .info-row.row-3cols { grid-template-columns: 0.7fr 1fr 1.3fr; }
+  .info-row.row-4cols { grid-template-columns: 0.85fr 0.55fr 0.70fr 1.1fr; }
   @media (max-width: 520px) {
-    .info-row.row-3cols { grid-template-columns: repeat(3,1fr); }
+    .info-row.row-3cols { grid-template-columns: 0.7fr 1fr 1.3fr; }
     .info-row.row-4cols { grid-template-columns: repeat(2,1fr); }
   }
   .info-fields label { font-size: 0.82rem; display: block; margin-bottom: 4px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -103,15 +103,16 @@
 
 <div class="info-fields">
   <div class="info-row row-3cols">
+    <div><label>Online/In-person</label><select id="sessionType"><option value="">Select...</option><option value="ONLINE">ONLINE</option><option value="IN-PERSON">IN-PERSON</option></select></div>
+    <div><label>Name of Issue</label><input type="text" id="issueName"></div>
     <div><label>Administrator Name</label><input type="text" id="therapistNumber"></div>
-    <div><label>Participant Code</label><input type="text" id="participantNumber"></div>
-    <div><label>Emotion Name *</label><input type="text" id="issueName"></div>
+
   </div>
   <div class="info-row row-4cols">
-    <div><label>Therapy Modality</label><input type="text" id="modality"></div>
-    <div><label>Session Type</label><select id="sessionType"><option value="">Select...</option><option value="ONLINE">ONLINE</option><option value="IN-PERSON">IN-PERSON</option></select></div>
+    <div><label>Participant Identifier</label><input type="text" id="participantNumber"></div>
     <div><label>Hours Used</label><input type="text" id="hours" inputmode="decimal"></div>
-    <div><label>End Date</label><input type="text" id="sessionDate"></div>
+    <div><label>End Date</label><input type="date" id="sessionDate"></div>
+	<div><label>Therapy Modality</label><input type="text" id="modality"></div>
   </div>
 </div>
 
@@ -740,8 +741,8 @@
     if(!document.getElementById('sessionType').value) return false;
     let hrs = parseFloat(hoursInput.value);
     if(isNaN(hrs) || hrs <= 0) return false;
-    if(!document.getElementById('sessionDate').value.trim()) return false;
-    return true;
+	if(!document.getElementById('sessionDate').value.trim()) return false;
+     return true;
   }
 
   function isBeforeComplete(){
@@ -788,17 +789,17 @@
 
   function updateHint(){
     if(!topComplete())
-      dynamicHint.innerText = "⚠️ Complete all top fields";
+      dynamicHint.innerText = "⚠️ Complete all the fields above before clicking the clock ";
     else if(clicks.length === 0)
       dynamicHint.innerText = "✅ Click clock to place BEFORE marker";
     else if(clicks.length === 1 && !isBeforeComplete())
-      dynamicHint.innerText = "🔘 Fill BEFORE fields · Drag ring around face to rotate it";
+      dynamicHint.innerText = "🔘 Fill BEFORE fields";
     else if(clicks.length === 1 && isBeforeComplete())
-      dynamicHint.innerText = "✅ Click clock to place AFTER marker · Drag ring around face to rotate it";
+      dynamicHint.innerText = "✅ Click clock to place AFTER marker";
     else if(clicks.length === 2 && !isAfterComplete())
-      dynamicHint.innerText = "📝 Fill AFTER fields · Drag ring around either face to rotate it";
+      dynamicHint.innerText = "📝 Fill AFTER fields";
     else
-      dynamicHint.innerText = "✔ Ready to download · Drag rings to adjust face orientations";
+      dynamicHint.innerText = "✔ Ready to download";
   }
 
   // ── Field listeners ───────────────────────────────────────────────────────
@@ -932,7 +933,7 @@
     let link = document.createElement('a');
     link.download = prefix + '_form.png'; link.href = shot.toDataURL(); link.click();
 
-    let csvHeader = "admin;participant;emotion;modality;sessType;hours;date;startSUDS;startPos;startFacing;startDist;startEyeL;startEyeP;endSUDS;endPos;endFacing;endDist;endEyeL;endEyeP;notes\n";
+    let csvHeader = "admin;participant;emotion;modality;sessType;hours;date;startSUDS;startPos;startDist;startEyeL;startEyeP;endSUDS;endPos;endDist;endEyeL;endEyeP;notes\n";
     let row = [
       document.getElementById('therapistNumber').value,
       document.getElementById('participantNumber').value,
@@ -943,12 +944,10 @@
       document.getElementById('sessionDate').value,
       startSudsInput.value,
       startClockPos.value,
-      clicks[0] ? Math.round(clicks[0].facingDeg) : '',
       startDistance.value,
       startEyeLevel.value, startEyePos.value,
       endSudsInput.value,
       endClockPos.value,
-      clicks[1] ? Math.round(clicks[1].facingDeg) : '',
       endDistance.value,
       endEyeLevel.value, endEyePos.value,
       notesTextarea.value.replace(/;/g, ',')
@@ -963,7 +962,7 @@
   // ── Init ──────────────────────────────────────────────────────────────────
   let d = new Date();
   document.getElementById('sessionDate').value =
-    `${d.getDate()} ${d.toLocaleString('default',{month:'short'})} ${d.getFullYear()}`;
+    `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   drawClock();
   updateFieldStates();
   updateWordCounter();

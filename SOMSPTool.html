@@ -275,7 +275,9 @@
     let newY = centerY + Math.sin(canvasRad) * dist;
     // Preserve facingDeg when clock position is typed
     let facingDeg = clicks[index] ? clicks[index].facingDeg : angleDeg;
-    clicks[index] = { x: newX, y: newY, angleDeg: angleDeg, facingDeg: facingDeg };
+    // Typed clock position: point the nose at the entered time
+	// (the rotation ring can still be used afterwards to turn the face independently)
+	clicks[index] = { x: newX, y: newY, angleDeg: angleDeg, facingDeg: angleDeg };
     drawClock();
     updateFieldStates();
   }

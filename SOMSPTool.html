@@ -931,7 +931,16 @@
   document.getElementById('downloadBtn').addEventListener('click', async function(){
     if(downloadBtn.disabled) return;
     let prefix = `${document.getElementById('therapistNumber').value}_${document.getElementById('participantNumber').value}_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}`;
-    let shot = await html2canvas(document.body, {scale:2});
+        let shot = await html2canvas(document.body, {
+      scale: 2,
+      onclone: function(clonedDoc){
+        // Show End Date as DD/MM/YYYY in the screenshot only (CSV is unaffected)
+        let d = clonedDoc.getElementById('sessionDate');
+        let p = d.value.split('-');            // YYYY-MM-DD
+        d.type  = 'text';
+        d.value = p[2] + '/' + p[1] + '/' + p[0];
+      }
+    });
     let link = document.createElement('a');
     link.download = prefix + '_form.png'; link.href = shot.toDataURL(); link.click();
 
